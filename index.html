@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sourdough Studio</title>
+<style>
+  /* Self-hosted font fallbacks - no external requests */
+  
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #F5F0E8;
+    --warm: #EDE4D3;
+    --crust: #C4873A;
+    --crust-dark: #8B5E1E;
+    --crumb: #F9F4EC;
+    --dark: #2C1F0E;
+    --mid: #6B4C2A;
+    --light-mid: #A07850;
+    --text: #3A2810;
+    --muted: #8B7355;
+    --border: rgba(196, 135, 58, 0.25);
+  }
+
+  body {
+    background: var(--cream);
+    color: var(--text);
+    font-family: 'Courier New', Courier, monospace;
+    min-height: 100vh;
+    background-image: 
+      radial-gradient(ellipse at 20% 10%, rgba(196,135,58,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(139,94,30,0.06) 0%, transparent 50%);
+  }
+
+  /* HEADER */
+  header {
+    background: var(--dark);
+    padding: 2rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(196,135,58,0.04) 40px, rgba(196,135,58,0.04) 41px);
+  }
+  .header-inner { max-width: 900px; margin: 0 auto; position: relative; }
+  .eyebrow { font-size: 10px; letter-spacing: 0.25em; color: var(--crust); text-transform: uppercase; margin-bottom: 0.5rem; }
+  h1 { font-family: Georgia, 'Times New Roman', serif; font-size: clamp(2rem, 5vw, 3.5rem); color: var(--cream); line-height: 1.1; }
+  h1 em { color: var(--crust); font-style: italic; }
+  .subtitle { font-size: 12px; color: var(--muted); margin-top: 0.75rem; letter-spacing: 0.05em; }
+
+  /* NAV */
+  nav { background: var(--warm); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+  .nav-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 0; overflow-x: auto; }
+  .nav-btn { background: none; border: none; padding: 1rem 1.5rem; font-family: 'Courier New', Courier, monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  .nav-btn:hover { color: var(--crust); }
+  .nav-btn.active { color: var(--crust-dark); border-bottom-color: var(--crust); }
+
+  /* MAIN */
+  main { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  .panel { display: none; animation: fadeIn 0.3s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* SECTION HEADERS */
+  .section-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--crust); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 12px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* RECIPE CARD */
+  .recipe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem; }
+  @media (max-width: 600px) { .recipe-grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--crumb);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    position: relative;
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--crust), var(--crust-dark));
+    border-radius: 4px 4px 0 0;
+  }
+  .card h3 { font-family: Georgia, 'Times New Roman', serif; font-size: 1.1rem; margin-bottom: 1rem; color: var(--dark); }
+
+  /* INGREDIENTS TABLE */
+  .ing-table { width: 100%; border-collapse: collapse; }
+  .ing-table th { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 0.4rem 0.5rem; text-align: left; border-bottom: 1px solid var(--border); }
+  .ing-table td { font-size: 13px; padding: 0.6rem 0.5rem; border-bottom: 1px solid rgba(196,135,58,0.1); color: var(--text); }
+  .ing-table tr:last-child td { border-bottom: none; }
+  .ing-table .num { text-align: right; font-weight: 500; color: var(--crust-dark); font-variant-numeric: tabular-nums; }
+
+  /* STEPS */
+  .steps { counter-reset: step; }
+  .step {
+    display: flex; gap: 1.25rem; margin-bottom: 1.25rem; padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .step:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .step-num {
+    counter-increment: step;
+    min-width: 32px; height: 32px;
+    border: 1px solid var(--crust);
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 500; color: var(--crust);
+    flex-shrink: 0;
+  }
+  .step-content h4 { font-family: Georgia, 'Times New Roman', serif; font-size: 1rem; margin-bottom: 0.3rem; color: var(--dark); }
+  .step-content p { font-size: 13px; color: var(--mid); line-height: 1.7; }
+  .step-content .timing { font-size: 11px; color: var(--crust); letter-spacing: 0.05em; margin-top: 0.4rem; display: inline-block; background: rgba(196,135,58,0.1); padding: 2px 8px; border-radius: 2px; }
+
+  /* HYDRATION CALCULATOR */
+  .calc-box {
+    background: var(--crumb); border: 1px solid var(--border); border-radius: 4px; padding: 1.75rem; margin-bottom: 1.5rem;
+    position: relative;
+  }
+  .calc-box::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--crust), var(--crust-dark)); border-radius: 4px 4px 0 0;
+  }
+  .calc-box h3 { font-family: Georgia, 'Times New Roman', serif; font-size: 1.1rem; margin-bottom: 1.25rem; color: var(--dark); }
+
+  .input-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .input-row label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); min-width: 130px; }
+  .input-row input[type=number] {
+    width: 110px; padding: 0.5rem 0.75rem; background: white; border: 1px solid var(--border);
+    border-radius: 3px; font-family: 'Courier New', Courier, monospace; font-size: 14px; color: var(--dark);
+    transition: border-color 0.2s;
+  }
+  .input-row input:focus { outline: none; border-color: var(--crust); }
+  .unit-note { font-size: 11px; color: var(--muted); }
+
+  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 1.25rem; }
+  .result-box { background: var(--dark); border-radius: 3px; padding: 0.875rem; text-align: center; }
+  .result-box .r-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--light-mid); margin-bottom: 4px; }
+  .result-box .r-val { font-size: 1.3rem; font-weight: 500; color: var(--cream); font-variant-numeric: tabular-nums; }
+  .result-box .r-unit { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  .hydration-bar-wrap { margin: 1.25rem 0 0.5rem; }
+  .hydration-bar-wrap .bar-label { font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .bar-track { height: 8px; background: rgba(196,135,58,0.15); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--crust), var(--crust-dark)); border-radius: 4px; transition: width 0.4s cubic-bezier(0.4,0,0.2,1); }
+
+  .conv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 580px) { .conv-grid { grid-template-columns: 1fr; } }
+
+  .conv-unit { }
+  .conv-unit label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+  .conv-unit input {
+    width: 100%; padding: 0.75rem 1rem; background: white; border: 1.5px solid var(--border);
+    border-radius: 3px; font-family: 'Courier New', Courier, monospace; font-size: 1.1rem; color: var(--dark);
+    transition: border-color 0.2s;
+  }
+  .conv-unit input:focus { outline: none; border-color: var(--crust); }
+  .conv-unit .unit-badge { font-size: 10px; color: var(--crust); margin-top: 5px; letter-spacing: 0.08em; }
+
+  .formula-strip { background: var(--dark); border-radius: 3px; padding: 0.875rem 1.25rem; margin-top: 1.5rem; }
+  .formula-strip p { font-size: 11px; color: var(--light-mid); letter-spacing: 0.05em; line-height: 1.8; }
+  .formula-strip span { color: var(--crust); font-weight: 500; }
+
+  .conv-arrows { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--crust); font-size: 14px; padding-top: 26px; }
+
+  /* TIPS */
+  .tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 580px) { .tips-grid { grid-template-columns: 1fr; } }
+  .tip-card { background: var(--crumb); border: 1px solid var(--border); border-radius: 4px; padding: 1.25rem; }
+  .tip-icon { font-size: 1.4rem; margin-bottom: 0.6rem; display: block; }
+  .tip-card h4 { font-family: Georgia, 'Times New Roman', serif; font-size: 0.95rem; margin-bottom: 0.4rem; color: var(--dark); }
+  .tip-card p { font-size: 12px; color: var(--mid); line-height: 1.7; }
+
+  .flour-btn {
+    background: var(--crumb); border: 1px solid var(--border); border-radius: 3px;
+    padding: 0.75rem 0.5rem; cursor: pointer; text-align: left; transition: all 0.2s;
+    font-family: 'Courier New', Courier, monospace;
+  }
+  .flour-btn:hover { border-color: var(--crust); }
+  .flour-btn.active-flour { background: var(--crust); border-color: var(--crust); }
+  .flour-btn.active-flour .fb-name { color: var(--crumb); }
+  .flour-btn.active-flour .fb-sub { color: rgba(249,244,236,0.7); }
+  .fb-name { font-size: 12px; font-weight: 500; color: var(--dark); margin-bottom: 3px; }
+  .fb-sub { font-size: 10px; color: var(--muted); letter-spacing: 0.04em; }
+
+  /* STARTER JOURNAL */
+  .day-card { background: var(--crumb); border: 1px solid var(--border); border-radius: 4px; margin-bottom: 1rem; overflow: hidden; transition: border-color 0.2s; }
+  .day-card.day-active { border-color: var(--crust); }
+  .day-header { display: flex; align-items: center; gap: 12px; padding: 1rem 1.25rem; cursor: pointer; user-select: none; }
+  .day-badge { min-width: 36px; height: 36px; border-radius: 3px; background: var(--warm); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: var(--crust-dark); flex-shrink: 0; }
+  .day-badge.done { background: var(--crust); border-color: var(--crust); color: var(--crumb); }
+  .day-title { font-family: Georgia, 'Times New Roman', serif; font-size: 1rem; color: var(--dark); }
+  .day-subtitle { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .day-body { padding: 0 1.25rem 1.25rem; border-top: 1px solid var(--border); display: none; }
+  .day-body.open { display: block; }
+  .day-story { font-size: 13px; color: var(--mid); line-height: 1.75; margin: 1rem 0; }
+  .day-expect { background: var(--warm); border-radius: 3px; padding: 0.75rem 1rem; font-size: 12px; color: var(--text); line-height: 1.7; margin-bottom: 1rem; }
+  .day-expect strong { color: var(--crust-dark); }
+  .feeding-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  .feeding-field { display: flex; flex-direction: column; gap: 4px; }
+  .feeding-field label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .feeding-field input { padding: 0.5rem 0.75rem; background: white; border: 1px solid var(--border); border-radius: 3px; font-family: 'Courier New', Courier, monospace; font-size: 14px; color: var(--dark); transition: border-color 0.2s; }
+  .feeding-field input:focus { outline: none; border-color: var(--crust); }
+  .feeding-field .conv { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .log-btn { font-family: 'Courier New', Courier, monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 7px 18px; border-radius: 3px; border: 1px solid var(--crust); background: var(--crust); color: var(--crumb); cursor: pointer; transition: all 0.2s; }
+  .log-btn:hover { background: var(--crust-dark); border-color: var(--crust-dark); }
+  .log-entry { font-size: 12px; background: var(--dark); color: var(--light-mid); border-radius: 3px; padding: 6px 10px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .temp-tip { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 2px; margin: 2px 3px; }
+  .temp-cold { background: rgba(24,95,165,0.1); color: #185FA5; }
+  .temp-ok   { background: rgba(29,158,117,0.12); color: #0F6E56; }
+  .temp-warm { background: rgba(196,135,58,0.15); color: var(--crust-dark); }
+  .temp-hot  { background: rgba(162,45,45,0.1); color: #A32D2D; }
+  .progress-track { height: 6px; background: rgba(196,135,58,0.15); border-radius: 3px; overflow: hidden; margin: 6px 0; }
+  .progress-fill  { height: 100%; background: linear-gradient(90deg, var(--crust), var(--crust-dark)); border-radius: 3px; transition: width 0.5s; }
+</style>
+</head>
+<body>
+
+<header style="padding:0;position:relative;min-height:200px;overflow:hidden;">
+  <img src="https://images.unsplash.com/photo-1585478259715-1c195ae2b568?w=1400&q=85" 
+       alt="Sourdough bread" loading="lazy" crossorigin="anonymous"
+       style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 40%;"
+       onerror="this.style.display='none'">
+  <div style="position:absolute;inset:0;background:linear-gradient(to bottom, rgba(44,31,14,0.72) 0%, rgba(44,31,14,0.85) 100%);"></div>
+  <div class="header-inner" style="position:relative;padding:2.5rem 2.5rem;">
+    <p class="eyebrow">Artisan Baking Guide</p>
+    <h1>Sourdough <em>Studio</em></h1>
+    <p class="subtitle">Recipes · Hydration Calculator · Tips</p>
+  </div>
+</header>
+
+<nav>
+  <div class="nav-inner">
+    <button class="nav-btn active" onclick="showPanel('recipe', this)">Recipes</button>
+    <button class="nav-btn" onclick="showPanel('calculator', this)">Calculator</button>
+    <button class="nav-btn" onclick="showPanel('starter', this)">Starter</button>
+    <button class="nav-btn" onclick="showPanel('tips', this)">Tips</button>
+  </div>
+</nav>
+
+<main>
+
+  <!-- RECIPE PANEL -->
+  <div id="panel-recipe" class="panel active">
+
+    <!-- RECIPE LIBRARY -->
+    <div id="recipe-library">
+      <div class="section-label">Recipe library</div>
+
+      <!-- Recipe cards grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:2rem;">
+
+        <div class="recipe-card" onclick="openRecipe('country')" style="cursor:pointer;background:var(--crumb);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--crust)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="height:130px;overflow:hidden;position:relative;"><img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=700&q=80" alt="Country sourdough" loading="lazy" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentElement.style.background='#C4873A'"></div>
+          <div style="padding:1.25rem;">
+            <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--crust);margin-bottom:6px;">Classic</div>
+            <h3 style="font-family:Georgia,serif;font-size:1.1rem;color:var(--dark);margin-bottom:6px;">Country Sourdough</h3>
+            <p style="font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:1rem;">The classic open-crumb boule. Pure bread flour, 70% hydration — the ideal starting recipe for any sourdough baker.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:10px;background:rgba(196,135,58,0.12);color:var(--crust-dark);padding:3px 8px;border-radius:2px;">70% hydration</span>
+              <span style="font-size:10px;background:rgba(196,135,58,0.12);color:var(--crust-dark);padding:3px 8px;border-radius:2px;">Beginner</span>
+              <span style="font-size:10px;background:rgba(196,135,58,0.12);color:var(--crust-dark);padding:3px 8px;border-radius:2px;">900g loaf</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card" onclick="openRecipe('rye')" style="cursor:pointer;background:var(--crumb);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--crust)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="height:130px;overflow:hidden;position:relative;"><img src="https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=700&q=80" alt="Dark rye sourdough" loading="lazy" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentElement.style.background='#4A2C0E'"></div>
+          <div style="padding:1.25rem;">
+            <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--crust);margin-bottom:6px;">German</div>
+            <h3 style="font-family:Georgia,serif;font-size:1.1rem;color:var(--dark);margin-bottom:6px;">Dark Rye (Roggenbrot)</h3>
+            <p style="font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:1rem;">Dense, moist, deeply earthy. 80% dark rye flour with long fermentation — the backbone of German baking tradition.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:10px;background:rgba(106,76,42,0.12);color:var(--mid);padding:3px 8px;border-radius:2px;">85% hydration</span>
+              <span style="font-size:10px;background:rgba(106,76,42,0.12);color:var(--mid);padding:3px 8px;border-radius:2px;">Intermediate</span>
+              <span style="font-size:10px;background:rgba(106,76,42,0.12);color:var(--mid);padding:3px 8px;border-radius:2px;">800g loaf</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card" onclick="openRecipe('seeded')" style="cursor:pointer;background:var(--crumb);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--crust)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="height:130px;overflow:hidden;position:relative;"><img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=700&q=80" alt="Seeded sourdough" loading="lazy" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentElement.style.background='#C4873A'"></div>
+          <div style="padding:1.25rem;">
+            <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--crust);margin-bottom:6px;">Seeded</div>
+            <h3 style="font-family:Georgia,serif;font-size:1.1rem;color:var(--dark);margin-bottom:6px;">Sunflower, Pumpkin &amp; Sesame</h3>
+            <p style="font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:1rem;">A nutty, crunchy loaf loaded with toasted seeds. Mixed into the dough and crusted on the outside for maximum texture.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:10px;background:rgba(90,138,58,0.1);color:#3B6D11;padding:3px 8px;border-radius:2px;">72% hydration</span>
+              <span style="font-size:10px;background:rgba(90,138,58,0.1);color:#3B6D11;padding:3px 8px;border-radius:2px;">Intermediate</span>
+              <span style="font-size:10px;background:rgba(90,138,58,0.1);color:#3B6D11;padding:3px 8px;border-radius:2px;">950g loaf</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card" onclick="openRecipe('wholewheat')" style="cursor:pointer;background:var(--crumb);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--crust)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="height:130px;overflow:hidden;position:relative;"><img src="https://images.unsplash.com/photo-1586444248879-bc604bc77f90?w=700&q=80" alt="Whole wheat sourdough" loading="lazy" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentElement.style.background='#8B5E1E'"></div>
+          <div style="padding:1.25rem;">
+            <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--crust);margin-bottom:6px;">Whole Grain</div>
+            <h3 style="font-family:Georgia,serif;font-size:1.1rem;color:var(--dark);margin-bottom:6px;">Whole Wheat Country Loaf</h3>
+            <p style="font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:1rem;">50% whole wheat for a wholesome, nutty flavour with a still-open crumb. Slightly faster fermentation than white flour.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:10px;background:rgba(196,135,58,0.12);color:var(--crust-dark);padding:3px 8px;border-radius:2px;">75% hydration</span>
+              <span style="font-size:10px;background:rgba(196,135,58,0.12);color:var(--crust-dark);padding:3px 8px;border-radius:2px;">Beginner</span>
+              <span style="font-size:10px;background:rgba(196,135,58,0.12);color:var(--crust-dark);padding:3px 8px;border-radius:2px;">850g loaf</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card" onclick="openRecipe('focaccia')" style="cursor:pointer;background:var(--crumb);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--crust)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="height:130px;overflow:hidden;position:relative;"><img src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=700&q=80" alt="Focaccia" loading="lazy" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;object-position:center;" onerror="this.parentElement.style.background='#3B6D11'"></div>
+          <div style="padding:1.25rem;">
+            <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--crust);margin-bottom:6px;">Italian</div>
+            <h3 style="font-family:Georgia,serif;font-size:1.1rem;color:var(--dark);margin-bottom:6px;">Olive &amp; Rosemary Focaccia</h3>
+            <p style="font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:1rem;">Pillowy, oil-drenched focaccia with a crisp golden base. Dimpled with olives and fresh rosemary — no shaping skill needed at all.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:10px;background:rgba(59,109,17,0.1);color:#3B6D11;padding:3px 8px;border-radius:2px;">80% hydration</span>
+              <span style="font-size:10px;background:rgba(59,109,17,0.1);color:#3B6D11;padding:3px 8px;border-radius:2px;">Beginner</span>
+              <span style="font-size:10px;background:rgba(59,109,17,0.1);color:#3B6D11;padding:3px 8px;border-radius:2px;">30x40cm pan</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RECIPE DETAIL VIEW -->
+    <div id="recipe-detail" style="display:none;">
+      <button onclick="closeRecipe()" style="font-family:'Courier New',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid var(--border);border-radius:3px;padding:6px 14px;color:var(--muted);cursor:pointer;margin-bottom:1.5rem;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--crust)';this.style.color='var(--crust)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">← All recipes</button>
+      <div id="recipe-detail-content"></div>
+    </div>
+
+  </div>
+
+  <!-- CALCULATOR PANEL -->
+  <!-- CALCULATOR PANEL -->
+  <div id="panel-calculator" class="panel">
+    <div class="section-label">Hydration &amp; Dough Weight Calculator</div>
+    <div class="calc-box">
+      <h3>Flour Blend &amp; Baker's Calculator</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:1.5rem;line-height:1.6;">Enter grams for each flour you're using — leave unused flours at 0. The blend automatically calculates recommended hydration, starter weight, and all ingredient amounts.</p>
+
+      <!-- FLOUR GRAM INPUTS -->
+      <!-- UNIT TOGGLE -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;">
+        <span style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);">Input unit:</span>
+        <button id="unit-g"   onclick="setUnit('g')"   style="font-family:'Courier New',monospace;font-size:11px;padding:4px 12px;border-radius:3px;border:1px solid var(--crust);background:var(--crust);color:var(--crumb);cursor:pointer;transition:all 0.2s;">g</button>
+        <button id="unit-oz"  onclick="setUnit('oz')"  style="font-family:'Courier New',monospace;font-size:11px;padding:4px 12px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.2s;">oz</button>
+        <button id="unit-cups" onclick="setUnit('cups')" style="font-family:'Courier New',monospace;font-size:11px;padding:4px 12px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.2s;">cups</button>
+        <span id="unit-hint" style="font-size:11px;color:var(--muted);margin-left:4px;">Enter amounts in grams</span>
+      </div>
+
+      <div style="background:var(--warm);border:1px solid var(--border);border-radius:3px;padding:1.1rem 1.25rem;margin-bottom:1.25rem;">
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;">Flour amounts</div>
+
+        <!-- Bread flour -->
+        <div style="margin-bottom:1rem;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="width:10px;height:10px;border-radius:2px;background:#C4873A;display:inline-block;flex-shrink:0;"></span>
+            <span style="font-size:12px;font-weight:500;color:var(--dark);">Bread Flour</span>
+            <span style="font-size:10px;color:var(--muted);">high protein · hyd 70% · starter 20%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="number" id="in-bread" value="360" min="0" step="1" oninput="recalcFromInput()" style="width:120px;padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:15px;color:var(--dark);">
+            <span id="unit-label-bread" style="font-size:12px;color:var(--muted);">g</span>
+            <span id="pct-bread" style="font-size:12px;color:var(--crust);margin-left:4px;">80%</span>
+          </div>
+        </div>
+
+        <!-- Whole wheat -->
+        <div style="margin-bottom:1rem;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="width:10px;height:10px;border-radius:2px;background:#8B5E1E;display:inline-block;flex-shrink:0;"></span>
+            <span style="font-size:12px;font-weight:500;color:var(--dark);">Whole Wheat</span>
+            <span style="font-size:10px;color:var(--muted);">nutty, fibrous · hyd 78% · starter 25%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="number" id="in-wheat" value="67" min="0" step="1" oninput="recalcFromInput()" style="width:120px;padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:15px;color:var(--dark);">
+            <span id="unit-label-wheat" style="font-size:12px;color:var(--muted);">g</span>
+            <span id="pct-wheat" style="font-size:12px;color:var(--crust);margin-left:4px;">15%</span>
+          </div>
+        </div>
+
+        <!-- Dark rye -->
+        <div style="margin-bottom:1rem;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <span style="width:10px;height:10px;border-radius:2px;background:#6B4C2A;display:inline-block;flex-shrink:0;"></span>
+            <span style="font-size:12px;font-weight:500;color:var(--dark);">Dark Rye</span>
+            <span style="font-size:10px;color:var(--muted);">earthy, dense · hyd 85% · starter 30%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input type="number" id="in-rye" value="23" min="0" step="1" oninput="recalcFromInput()" style="width:120px;padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:15px;color:var(--dark);">
+            <span id="unit-label-rye" style="font-size:12px;color:var(--muted);">g</span>
+            <span id="pct-rye" style="font-size:12px;color:var(--crust);margin-left:4px;">5%</span>
+          </div>
+        </div>
+
+        <!-- Visual blend bar + total -->
+        <div style="border-top:1px solid var(--border);padding-top:0.875rem;margin-top:0.25rem;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px;">
+            <span>Blend composition</span>
+            <span>Total flour: <strong id="total-flour-g" style="color:var(--dark);">450g</strong></span>
+          </div>
+          <div style="height:10px;border-radius:5px;overflow:hidden;display:flex;">
+            <div id="bar-bread" style="height:100%;background:#C4873A;transition:width 0.3s;width:80%;"></div>
+            <div id="bar-wheat" style="height:100%;background:#8B5E1E;transition:width 0.3s;width:15%;"></div>
+            <div id="bar-rye"   style="height:100%;background:#6B4C2A;transition:width 0.3s;width:5%;"></div>
+          </div>
+          <div style="display:flex;gap:14px;margin-top:6px;font-size:10px;color:var(--muted);">
+            <span><span style="display:inline-block;width:8px;height:8px;background:#C4873A;border-radius:1px;margin-right:3px;"></span>Bread</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:#8B5E1E;border-radius:1px;margin-right:3px;"></span>Whole wheat</span>
+            <span><span style="display:inline-block;width:8px;height:8px;background:#6B4C2A;border-radius:1px;margin-right:3px;"></span>Dark rye</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- BLENDED RECOMMENDATIONS -->
+      <div style="background:var(--dark);border-radius:3px;padding:0.875rem 1.1rem;margin-bottom:1.25rem;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+        <div><div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--light-mid);margin-bottom:3px;">Rec. hydration</div><div id="blend-hyd" style="font-size:15px;font-weight:500;color:var(--cream);">71%</div></div>
+        <div><div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--light-mid);margin-bottom:3px;">Rec. starter</div><div id="blend-sp" style="font-size:15px;font-weight:500;color:var(--cream);">21%</div></div>
+        <div><div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--light-mid);margin-bottom:3px;">Est. bulk time</div><div id="blend-bulk" style="font-size:15px;font-weight:500;color:var(--cream);">4-5 hrs</div></div>
+        <div><div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--light-mid);margin-bottom:3px;">Dough character</div><div id="blend-char" style="font-size:11px;font-weight:500;color:var(--cream);line-height:1.4;">Open crumb, chewy</div></div>
+      </div>
+
+      <!-- MANUAL OVERRIDES -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.25rem;">
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);">Hydration %</label>
+          <input type="number" id="hydration" value="71" min="50" max="100" oninput="recalc()" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:14px;color:var(--dark);">
+          <span style="font-size:10px;color:var(--crust);">← auto from blend</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);">Starter weight (g)</label>
+          <input type="number" id="starter_g" value="94" min="0" max="2000" oninput="recalc()" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:14px;color:var(--dark);">
+          <span id="starter-derived" style="font-size:10px;color:var(--crust);">← auto from blend</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);">Salt %</label>
+          <input type="number" id="salt_pct" value="2.2" min="1" max="3" step="0.1" oninput="recalc()" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:14px;color:var(--dark);">
+        </div>
+      </div>
+
+      <!-- HYDRATION BAR -->
+      <div class="hydration-bar-wrap" style="margin-bottom:1.25rem;">
+        <div class="bar-label"><span>Hydration level</span><span id="hyd-pct-label">71%</span></div>
+        <div class="bar-track"><div class="bar-fill" id="hyd-bar" style="width:71%"></div></div>
+      </div>
+
+      <!-- FULL BREAKDOWN TABLE -->
+      <div style="background:var(--warm);border:1px solid var(--border);border-radius:3px;padding:1rem 1.25rem;margin-bottom:1rem;">
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;">Full ingredient breakdown</div>
+        <table class="ing-table" style="background:transparent;">
+          <thead><tr><th>Ingredient</th><th class="num">Grams</th><th class="num">Ounces</th><th class="num">Cups</th><th class="num">Baker's %</th></tr></thead>
+          <tbody>
+            <tr id="row-bread"><td><span style="display:inline-block;width:8px;height:8px;background:#C4873A;border-radius:1px;margin-right:6px;vertical-align:middle;"></span>Bread flour</td><td class="num" id="b-bread">360g</td><td class="num" id="b-bread-oz">12.70 oz</td><td class="num" id="b-bread-lb">2.88 cups</td><td class="num" id="b-bread-pct">80%</td></tr>
+            <tr id="row-wheat"><td><span style="display:inline-block;width:8px;height:8px;background:#8B5E1E;border-radius:1px;margin-right:6px;vertical-align:middle;"></span>Whole wheat</td><td class="num" id="b-wheat">67g</td><td class="num" id="b-wheat-oz">2.36 oz</td><td class="num" id="b-wheat-lb">0.54 cups</td><td class="num" id="b-wheat-pct">15%</td></tr>
+            <tr id="row-rye"><td><span style="display:inline-block;width:8px;height:8px;background:#6B4C2A;border-radius:1px;margin-right:6px;vertical-align:middle;"></span>Dark rye</td><td class="num" id="b-rye">23g</td><td class="num" id="b-rye-oz">0.81 oz</td><td class="num" id="b-rye-lb">0.18 cups</td><td class="num" id="b-rye-pct">5%</td></tr>
+            <tr style="border-top:2px solid var(--border);font-weight:500;"><td>Total flour</td><td class="num" id="b-flour-total">450g</td><td class="num" id="b-flour-total-oz">15.87 oz</td><td class="num" id="b-flour-total-lb">3.60 cups</td><td class="num">100%</td></tr>
+            <tr><td>Water</td><td class="num" id="b-water">320g</td><td class="num" id="b-water-oz">11.28 oz</td><td class="num" id="b-water-lb">1.33 cups</td><td class="num" id="b-water-pct">71%</td></tr>
+            <tr><td>Starter</td><td class="num" id="b-starter">94g</td><td class="num" id="b-starter-oz">3.32 oz</td><td class="num" id="b-starter-lb">0.39 cups</td><td class="num" id="b-starter-pct">21%</td></tr>
+            <tr><td>Salt</td><td class="num" id="b-salt">9.9g</td><td class="num" id="b-salt-oz">0.35 oz</td><td class="num" id="b-salt-lb">1.65 tsp</td><td class="num" id="b-salt-pct">2.2%</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-box"><div class="r-label">Total dough</div><div class="r-val" id="r-total">874</div><div class="r-unit">grams</div></div>
+        <div class="result-box"><div class="r-label">Total</div><div class="r-val" id="r-total-oz">30.8</div><div class="r-unit">ounces</div></div>
+        <div class="result-box"><div class="r-label">Flour</div><div class="r-val" id="r-total-lbs">7.56</div><div class="r-unit">cups flour</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STARTER PANEL -->
+  <div id="panel-starter" class="panel">
+
+    <!-- Hero -->
+    <div style="border-radius:4px;overflow:hidden;height:200px;margin-bottom:1.5rem;position:relative;">
+      <img src="https://images.unsplash.com/photo-1574085733277-851d9d856a3a?w=1200&q=85"
+           alt="Sourdough starter" loading="lazy" crossorigin="anonymous"
+           style="width:100%;height:100%;object-fit:cover;object-position:center 30%;"
+           onerror="this.parentElement.style.display='none'">
+      <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(44,31,14,0.7) 0%,rgba(44,31,14,0.2) 70%);"></div>
+      <div style="position:absolute;bottom:1.25rem;left:1.5rem;">
+        <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(196,135,58,0.9);margin-bottom:6px;">7-day journey</div>
+        <div style="font-family:Georgia,serif;font-size:1.5rem;color:#F5F0E8;font-style:italic;line-height:1.2;">Build your own<br>living starter</div>
+      </div>
+    </div>
+
+    <!-- UNIT TOGGLE -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap;">
+      <span style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);">Measurement unit:</span>
+      <button id="su-g"   onclick="setStarterUnit('g')"   style="font-family:'Courier New',monospace;font-size:11px;padding:4px 12px;border-radius:3px;border:1px solid var(--crust);background:var(--crust);color:var(--crumb);cursor:pointer;">g</button>
+      <button id="su-oz"  onclick="setStarterUnit('oz')"  style="font-family:'Courier New',monospace;font-size:11px;padding:4px 12px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">oz</button>
+      <button id="su-cup" onclick="setStarterUnit('cup')" style="font-family:'Courier New',monospace;font-size:11px;padding:4px 12px;border-radius:3px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;">cups</button>
+    </div>
+
+    <!-- PROGRESS BAR -->
+    <div style="background:var(--crumb);border:1px solid var(--border);border-radius:4px;padding:1.25rem;margin-bottom:1.5rem;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+        <span style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);">Starter journey</span>
+        <span id="starter-progress-label" style="font-size:11px;color:var(--crust);">Day 0 of 7</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="starter-progress-bar" style="width:0%"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;">
+        <span style="font-size:10px;color:var(--muted);">Mix day</span>
+        <span style="font-size:10px;color:var(--muted);">Days 1–3: establish</span>
+        <span style="font-size:10px;color:var(--muted);">Days 4–5: feed</span>
+        <span style="font-size:10px;color:var(--crust);font-weight:500;">Day 7: ready!</span>
+      </div>
+    </div>
+
+    <!-- TEMPERATURE GUIDE -->
+    <div style="background:var(--dark);border-radius:3px;padding:0.875rem 1.25rem;margin-bottom:1.5rem;">
+      <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--light-mid);margin-bottom:8px;">Room temperature guide</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
+        <span class="temp-tip temp-cold">Below 18°C / 65°F — very slow, extend days by 1–2</span>
+        <span class="temp-tip temp-ok">20–24°C / 68–75°F — ideal range</span>
+        <span class="temp-tip temp-warm">25–28°C / 77–82°F — faster, watch closely</span>
+        <span class="temp-tip temp-hot">Above 30°C / 86°F — feed more often, keep cool</span>
+      </div>
+      <p style="font-size:11px;color:var(--muted);line-height:1.6;">A warm kitchen speeds fermentation; a cool one slows it. Never put your starter in the fridge during the first 7 days. The top of your fridge or near a warm (not hot) oven are ideal spots.</p>
+    </div>
+
+    <!-- METHOD SELECTOR -->
+    <div style="margin-bottom:1.5rem;">
+      <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Starter method</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button id="method-classic" onclick="setStarterMethod('classic')" style="text-align:left;padding:1rem;border-radius:4px;border:2px solid var(--crust);background:var(--crust);cursor:pointer;transition:all 0.2s;font-family:'Courier New',monospace;">
+          <div style="font-size:12px;font-weight:500;color:var(--crumb);margin-bottom:3px;">Classic Flour &amp; Water</div>
+          <div style="font-size:11px;color:rgba(249,244,236,0.75);">Reliable · beginner-friendly · 7 days</div>
+        </button>
+        <button id="method-grape" onclick="setStarterMethod('grape')" style="text-align:left;padding:1rem;border-radius:4px;border:2px solid var(--border);background:var(--crumb);cursor:pointer;transition:all 0.2s;font-family:'Courier New',monospace;">
+          <div style="font-size:12px;font-weight:500;color:var(--dark);margin-bottom:3px;">Wild Grape Starter</div>
+          <div style="font-size:11px;color:var(--muted);">Traditional · complex flavour · 10–14 days</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- GRAPE STARTER INFO (shown when grape method selected) -->
+    <div id="grape-info" style="display:none;background:var(--dark);border-radius:4px;overflow:hidden;margin-bottom:1.5rem;">
+      <div style="height:120px;overflow:hidden;position:relative;">
+        <img src="https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=1000&q=80" alt="Grapes for starter" loading="lazy" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;object-position:center 60%;" onerror="this.parentElement.style.display='none'">
+        <div style="position:absolute;inset:0;background:rgba(44,31,14,0.45);"></div>
+        <div style="position:absolute;bottom:0.75rem;left:1.25rem;font-family:Georgia,serif;font-size:1.1rem;color:#F5F0E8;font-style:italic;">Wild Grape Starter</div>
+      </div>
+      <div style="padding:1.25rem;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:1.2rem;">🍇</span>
+        <div>
+          <div style="font-size:12px;font-weight:500;color:var(--cream);">Wild Grape Starter (Levain Sauvage)</div>
+          <div style="font-size:11px;color:var(--light-mid);">Italian &amp; French tradition · takes 10–14 days</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.75;margin-bottom:10px;">Unwashed grapes carry a natural coating of wild yeast on their skins called the "bloom" — the same yeast used for wine. By macerating grapes with flour and water, you capture this yeast and use it to build a starter. The result is a more complex, slightly fruity, wine-like flavour in your bread. It takes longer than a classic starter but many bakers consider it the most flavourful route.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+        <div style="background:rgba(255,255,255,0.06);border-radius:3px;padding:0.6rem 0.75rem;">
+          <div style="font-size:10px;color:var(--light-mid);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;">Grapes to use</div>
+          <div style="font-size:12px;color:var(--cream);">Unwashed red or white grapes — organic preferred</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.06);border-radius:3px;padding:0.6rem 0.75rem;">
+          <div style="font-size:10px;color:var(--light-mid);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;">Why unwashed?</div>
+          <div style="font-size:12px;color:var(--cream);">Washing removes the natural yeast bloom from the skins</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.06);border-radius:3px;padding:0.6rem 0.75rem;">
+          <div style="font-size:10px;color:var(--light-mid);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;">Timeline</div>
+          <div style="font-size:12px;color:var(--cream);">10–14 days total; grapes removed at day 3–4</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DAY CARDS -->
+    <div id="classic-days">
+    <div class="section-label">Day by day — classic method</div>
+
+    <!-- DAY 0 -->
+    <div class="day-card" id="dc-0">
+      <div class="day-header" onclick="toggleDay(0)">
+        <div class="day-badge" id="db-0">0</div>
+        <div><div class="day-title">Day 0 — The Beginning</div><div class="day-subtitle">Mix your first starter · takes 5 minutes</div></div>
+      </div>
+      <div class="day-body" id="dy-0">
+        <p class="day-story">Every sourdough starter begins with just two ingredients: flour and water. You are not adding yeast. You are inviting the wild yeast and bacteria that already live on the flour and in the air to make themselves at home. This is day zero: the first mix. Nothing will happen today, and this is completely normal.</p>
+        <div class="day-expect"><strong>What to expect:</strong> A thick, paste-like mixture. No bubbles yet. Possibly a faint floury smell. This is correct — the microorganisms haven't woken up yet.</div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Your mix — Day 0</div>
+        <div class="feeding-row">
+          <div class="feeding-field">
+            <label>Whole rye or wheat flour</label>
+            <input type="number" id="d0-flour" value="50" min="0" oninput="updateConv('d0-flour','d0-flour-conv')">
+            <div class="conv" id="d0-flour-conv">1.76 oz · 0.39 cups</div>
+          </div>
+          <div class="feeding-field">
+            <label>Water (room temp)</label>
+            <input type="number" id="d0-water" value="50" min="0" oninput="updateConv('d0-water','d0-water-conv')">
+            <div class="conv" id="d0-water-conv">1.76 oz · 0.21 cups</div>
+          </div>
+          <div class="feeding-field">
+            <label>Container size needed</label>
+            <input type="text" id="d0-jar" value="500ml jar" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:14px;color:var(--dark);">
+            <div class="conv" style="color:var(--crust);">use a wide-mouth jar</div>
+          </div>
+        </div>
+        <button class="log-btn" onclick="logDay(0)">Log Day 0 ✓</button>
+        <div id="log-0"></div>
+        <div style="margin-top:1rem;font-size:12px;color:var(--mid);line-height:1.7;"><strong style="color:var(--dark);">Tip:</strong> Use whole rye or whole wheat flour for day 0 — the bran carries more wild yeast than white flour, giving your starter a much stronger start. Cover loosely (not airtight) and leave at room temperature.</div>
+      </div>
+    </div>
+
+    <!-- DAY 1 -->
+    <div class="day-card" id="dc-1">
+      <div class="day-header" onclick="toggleDay(1)">
+        <div class="day-badge" id="db-1">1</div>
+        <div><div class="day-title">Day 1 — First Signs of Life</div><div class="day-subtitle">Observe · no feeding yet</div></div>
+      </div>
+      <div class="day-body" id="dy-1">
+        <p class="day-story">You wake up and check the jar. It might look exactly the same as yesterday, or you might spot a few tiny bubbles forming near the edges or just below the surface. Either way: something is beginning. The wild yeast are stirring. The bacteria are beginning to produce lactic and acetic acid. The smell may shift from neutral to faintly sour or cheesy — this is progress.</p>
+        <div class="day-expect"><strong>What to expect:</strong> Possibly 1–5 small bubbles. A faintly sour or yeasty smell. No dramatic rise yet — that comes later. If nothing at all has happened, do not panic: cooler rooms take longer.</div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Observation log</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;">
+          <div class="feeding-field">
+            <label>Bubble activity</label>
+            <select id="d1-bubbles" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:13px;color:var(--dark);">
+              <option>None yet</option><option>A few tiny bubbles</option><option>Moderate bubbling</option><option>Very active</option>
+            </select>
+          </div>
+          <div class="feeding-field">
+            <label>Smell</label>
+            <select id="d1-smell" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:13px;color:var(--dark);">
+              <option>Neutral / floury</option><option>Faintly sour</option><option>Yeasty</option><option>Cheesy or funky</option><option>Unpleasant</option>
+            </select>
+          </div>
+        </div>
+        <div class="feeding-field" style="margin-bottom:1rem;">
+          <label>Room temperature</label>
+          <input type="text" id="d1-temp" placeholder="e.g. 22°C / 72°F" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:14px;color:var(--dark);width:220px;">
+        </div>
+        <button class="log-btn" onclick="logDay(1)">Log Day 1 ✓</button>
+        <div id="log-1"></div>
+        <div style="margin-top:1rem;font-size:12px;color:var(--mid);line-height:1.7;"><strong style="color:var(--dark);">No feeding today</strong> — resist the urge. Let the culture establish itself. Adding fresh flour now would dilute the microorganisms before they've had a chance to multiply.</div>
+      </div>
+    </div>
+
+    <!-- DAY 2 -->
+    <div class="day-card" id="dc-2">
+      <div class="day-header" onclick="toggleDay(2)">
+        <div class="day-badge" id="db-2">2</div>
+        <div><div class="day-title">Day 2 — Discard & First Feed</div><div class="day-subtitle">First discard · first real feeding</div></div>
+      </div>
+      <div class="day-body" id="dy-2">
+        <p class="day-story">Today you meet the concept of "discard" — and it feels wasteful at first, but it's essential. You remove most of the old starter before feeding. Why? Because if you just kept adding flour and water without discarding, you'd have an enormous quantity of starter within days, and the ratio of fresh food to active culture would be off. The discard keeps the culture manageable and well-fed. (You can use discard in pancakes, crackers, and flatbreads — nothing goes to waste.)</p>
+        <div class="day-expect"><strong>What to expect:</strong> More bubbles than yesterday, possibly some rise and fall. A noticeably sour or tangy aroma. The texture may be looser. This is your culture becoming more active.</div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Discard &amp; feed — Day 2</div>
+        <div class="feeding-row">
+          <div class="feeding-field">
+            <label>Keep (don't discard)</label>
+            <input type="number" id="d2-keep" value="25" min="0" oninput="updateConv('d2-keep','d2-keep-conv')">
+            <div class="conv" id="d2-keep-conv">0.88 oz · 0.10 cups</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add flour</label>
+            <input type="number" id="d2-flour" value="50" min="0" oninput="updateConv('d2-flour','d2-flour-conv')">
+            <div class="conv" id="d2-flour-conv">1.76 oz · 0.39 cups</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add water</label>
+            <input type="number" id="d2-water" value="50" min="0" oninput="updateConv('d2-water','d2-water-conv')">
+            <div class="conv" id="d2-water-conv">1.76 oz · 0.21 cups</div>
+          </div>
+        </div>
+        <button class="log-btn" onclick="logDay(2)">Log Day 2 ✓</button>
+        <div id="log-2"></div>
+        <div style="margin-top:1rem;font-size:12px;color:var(--mid);line-height:1.7;"><strong style="color:var(--dark);">Flour type:</strong> You can start transitioning to bread flour now, or keep using whole wheat/rye for a more active starter. Mix both if you like — 50/50 is great.</div>
+      </div>
+    </div>
+
+    <!-- DAY 3 -->
+    <div class="day-card" id="dc-3">
+      <div class="day-header" onclick="toggleDay(3)">
+        <div class="day-badge" id="db-3">3</div>
+        <div><div class="day-title">Day 3 — The Surge (or the Panic)</div><div class="day-subtitle">Discard &amp; feed · watch for a false rise</div></div>
+      </div>
+      <div class="day-body" id="dy-3">
+        <p class="day-story">Day 3 is infamous. Many starters go wild around now — doubling in size, full of bubbles, smelling strongly — and bakers get excited and think they're done. This is usually a "false rise" caused by leuconostoc bacteria, which die off quickly. Your starter isn't ready yet. Keep feeding. Conversely, some starters barely move on day 3, which is also fine — cooler kitchens are just slower.</p>
+        <div class="day-expect"><strong>What to expect:</strong> Possibly dramatic activity — or none. Both are normal at day 3. A strong, almost unpleasant sour smell is common and will mellow. Do not use it for baking yet.</div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Discard &amp; feed — Day 3</div>
+        <div class="feeding-row">
+          <div class="feeding-field">
+            <label>Keep</label>
+            <input type="number" id="d3-keep" value="25" min="0" oninput="updateConv('d3-keep','d3-keep-conv')">
+            <div class="conv" id="d3-keep-conv">0.88 oz · 0.10 cups</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add flour</label>
+            <input type="number" id="d3-flour" value="50" min="0" oninput="updateConv('d3-flour','d3-flour-conv')">
+            <div class="conv" id="d3-flour-conv">1.76 oz · 0.39 cups</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add water</label>
+            <input type="number" id="d3-water" value="50" min="0" oninput="updateConv('d3-water','d3-water-conv')">
+            <div class="conv" id="d3-water-conv">1.76 oz · 0.21 cups</div>
+          </div>
+        </div>
+        <button class="log-btn" onclick="logDay(3)">Log Day 3 ✓</button>
+        <div id="log-3"></div>
+      </div>
+    </div>
+
+    <!-- DAY 4 -->
+    <div class="day-card" id="dc-4">
+      <div class="day-header" onclick="toggleDay(4)">
+        <div class="day-badge" id="db-4">4</div>
+        <div><div class="day-title">Day 4 — Finding Rhythm</div><div class="day-subtitle">Twice-daily feeding begins · building strength</div></div>
+      </div>
+      <div class="day-body" id="dy-4">
+        <p class="day-story">The storm of day 3 settles. If your starter went crazy, it may seem calmer now — this is actually good news. The leuconostoc bacteria have died back and the real heroes are taking over: Lactobacillus bacteria and Saccharomyces cerevisiae yeast. From today, feed twice a day (morning and evening) to build a strong, predictable culture. You're entering the training phase.</p>
+        <div class="day-expect"><strong>What to expect:</strong> More moderate, consistent bubbling. A pleasant tangy or yoghurt-like smell replacing the sharp funk. The starter should begin showing a predictable rise and fall pattern.</div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Morning feed</div>
+        <div class="feeding-row">
+          <div class="feeding-field">
+            <label>Keep</label>
+            <input type="number" id="d4a-keep" value="25" min="0" oninput="updateConv('d4a-keep','d4a-keep-conv')">
+            <div class="conv" id="d4a-keep-conv">0.88 oz</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add flour</label>
+            <input type="number" id="d4a-flour" value="50" min="0" oninput="updateConv('d4a-flour','d4a-flour-conv')">
+            <div class="conv" id="d4a-flour-conv">1.76 oz</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add water</label>
+            <input type="number" id="d4a-water" value="50" min="0" oninput="updateConv('d4a-water','d4a-water-conv')">
+            <div class="conv" id="d4a-water-conv">1.76 oz</div>
+          </div>
+        </div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:0.5rem;">Evening feed</div>
+        <div class="feeding-row">
+          <div class="feeding-field">
+            <label>Keep</label>
+            <input type="number" id="d4b-keep" value="25" min="0" oninput="updateConv('d4b-keep','d4b-keep-conv')">
+            <div class="conv" id="d4b-keep-conv">0.88 oz</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add flour</label>
+            <input type="number" id="d4b-flour" value="50" min="0" oninput="updateConv('d4b-flour','d4b-flour-conv')">
+            <div class="conv" id="d4b-flour-conv">1.76 oz</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add water</label>
+            <input type="number" id="d4b-water" value="50" min="0" oninput="updateConv('d4b-water','d4b-water-conv')">
+            <div class="conv" id="d4b-water-conv">1.76 oz</div>
+          </div>
+        </div>
+        <button class="log-btn" onclick="logDay(4)">Log Day 4 ✓</button>
+        <div id="log-4"></div>
+      </div>
+    </div>
+
+    <!-- DAY 5 -->
+    <div class="day-card" id="dc-5">
+      <div class="day-header" onclick="toggleDay(5)">
+        <div class="day-badge" id="db-5">5</div>
+        <div><div class="day-title">Day 5 — Growing Confidence</div><div class="day-subtitle">Continue twice-daily · track the rise</div></div>
+      </div>
+      <div class="day-body" id="dy-5">
+        <p class="day-story">By now your starter should be showing real, repeatable behaviour. Feed it, mark the jar with a rubber band, and watch. It should rise — doubling or more at its peak — then fall back down. The peak is when you would use it for baking. A starter that reliably doubles within 4–8 hours of feeding is a healthy, active culture.</p>
+        <div class="day-expect"><strong>What to expect:</strong> Consistent doubling (or close to it). A network of bubbles throughout the jar, not just on top. A pleasantly tangy smell — like yoghurt or mild vinegar. The texture should be light and airy at peak.</div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Feed + rise tracking</div>
+        <div class="feeding-row">
+          <div class="feeding-field">
+            <label>Keep</label>
+            <input type="number" id="d5-keep" value="25" min="0" oninput="updateConv('d5-keep','d5-keep-conv')">
+            <div class="conv" id="d5-keep-conv">0.88 oz</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add flour</label>
+            <input type="number" id="d5-flour" value="50" min="0" oninput="updateConv('d5-flour','d5-flour-conv')">
+            <div class="conv" id="d5-flour-conv">1.76 oz</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add water</label>
+            <input type="number" id="d5-water" value="50" min="0" oninput="updateConv('d5-water','d5-water-conv')">
+            <div class="conv" id="d5-water-conv">1.76 oz</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;">
+          <div class="feeding-field">
+            <label>Height after feed</label>
+            <input type="text" id="d5-height-before" placeholder="e.g. 5cm / 2in" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:13px;color:var(--dark);">
+          </div>
+          <div class="feeding-field">
+            <label>Peak height (4–8 hrs later)</label>
+            <input type="text" id="d5-height-peak" placeholder="e.g. 10cm / 4in" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:13px;color:var(--dark);">
+          </div>
+        </div>
+        <button class="log-btn" onclick="logDay(5)">Log Day 5 ✓</button>
+        <div id="log-5"></div>
+        <div style="margin-top:1rem;font-size:12px;color:var(--mid);line-height:1.7;"><strong style="color:var(--dark);">Pro tip:</strong> Mark the side of your jar with a rubber band or tape right after feeding. This lets you see exactly how much it rises and when it peaks — far more useful than guessing.</div>
+      </div>
+    </div>
+
+    <!-- DAY 6 -->
+    <div class="day-card" id="dc-6">
+      <div class="day-header" onclick="toggleDay(6)">
+        <div class="day-badge" id="db-6">6</div>
+        <div><div class="day-title">Day 6 — The Float Test</div><div class="day-subtitle">Almost ready · do the float test</div></div>
+      </div>
+      <div class="day-body" id="dy-6">
+        <p class="day-story">Today you can try the float test for the first time. Take a small spoonful of starter at its peak and drop it into a glass of water. Does it float? A floating starter is full of CO₂ bubbles — it's light, airy, and active enough to leaven bread. If it sinks, give it one more day of twice-daily feeding. Sinking just means it needs a little more time to build strength.</p>
+        <div class="day-expect"><strong>What to expect:</strong> A reliably doubling starter with webby, open bubbles. A tangy, pleasant aroma — not sharp or unpleasant. A float test that just might work today.</div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Feed + float test</div>
+        <div class="feeding-row">
+          <div class="feeding-field">
+            <label>Keep</label>
+            <input type="number" id="d6-keep" value="25" min="0" oninput="updateConv('d6-keep','d6-keep-conv')">
+            <div class="conv" id="d6-keep-conv">0.88 oz</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add flour</label>
+            <input type="number" id="d6-flour" value="50" min="0" oninput="updateConv('d6-flour','d6-flour-conv')">
+            <div class="conv" id="d6-flour-conv">1.76 oz</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add water</label>
+            <input type="number" id="d6-water" value="50" min="0" oninput="updateConv('d6-water','d6-water-conv')">
+            <div class="conv" id="d6-water-conv">1.76 oz</div>
+          </div>
+        </div>
+        <div class="feeding-field" style="margin-bottom:1rem;">
+          <label>Float test result</label>
+          <select id="d6-float" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:13px;color:var(--dark);">
+            <option>Not tested yet</option><option>Floated! Ready soon</option><option>Sank — one more day</option><option>Partially floated</option>
+          </select>
+        </div>
+        <button class="log-btn" onclick="logDay(6)">Log Day 6 ✓</button>
+        <div id="log-6"></div>
+      </div>
+    </div>
+
+    <!-- DAY 7 -->
+    <div class="day-card" id="dc-7">
+      <div class="day-header" onclick="toggleDay(7)">
+        <div class="day-badge" id="db-7">7</div>
+        <div><div class="day-title">Day 7 — Your Starter is Alive</div><div class="day-subtitle">Ready to bake · ongoing maintenance</div></div>
+      </div>
+      <div class="day-body" id="dy-7">
+        <p class="day-story">You did it. Seven days ago you mixed flour and water. Today you have a living culture that can leaven bread. Your starter has a personality — it has a flavour, a rhythm, a smell you will come to recognise. Bakers name their starters. Some are decades old, passed between friends and families. Yours starts here. Feed it one more time today, let it peak, and then bake your first loaf. Welcome to sourdough.</p>
+        <div class="day-expect"><strong>Ready when:</strong> It doubles within 4–8 hrs of feeding. It passes the float test. It smells tangy and pleasant, not sharp or alcoholic. It has visible bubbles throughout (not just on top).</div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Final feed before baking</div>
+        <div class="feeding-row">
+          <div class="feeding-field">
+            <label>Keep</label>
+            <input type="number" id="d7-keep" value="50" min="0" oninput="updateConv('d7-keep','d7-keep-conv')">
+            <div class="conv" id="d7-keep-conv">1.76 oz</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add flour</label>
+            <input type="number" id="d7-flour" value="100" min="0" oninput="updateConv('d7-flour','d7-flour-conv')">
+            <div class="conv" id="d7-flour-conv">3.53 oz</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add water</label>
+            <input type="number" id="d7-water" value="100" min="0" oninput="updateConv('d7-water','d7-water-conv')">
+            <div class="conv" id="d7-water-conv">3.53 oz</div>
+          </div>
+        </div>
+        <button class="log-btn" onclick="logDay(7)" style="background:#1D9E75;border-color:#1D9E75;">Starter Complete! 🎉</button>
+        <div id="log-7"></div>
+        <div style="margin-top:1.25rem;background:var(--warm);border-radius:3px;padding:1rem 1.25rem;">
+          <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Ongoing maintenance</div>
+          <div style="font-size:12px;color:var(--mid);line-height:1.8;">
+            <strong style="color:var(--dark);">If baking weekly:</strong> store in fridge, feed once a week, take out 12 hrs before baking.<br>
+            <strong style="color:var(--dark);">If baking daily:</strong> keep at room temp, feed every 12 hrs (discard each time).<br>
+            <strong style="color:var(--dark);">Ratio:</strong> 1 part starter : 1 part flour : 1 part water (by weight) is the standard 1:1:1 feed.<br>
+            <strong style="color:var(--dark);">Hooch (grey liquid on top):</strong> your starter is hungry — pour it off and feed immediately.
+          </div>
+        </div>
+      </div>
+    </div>
+    </div><!-- /classic-days -->
+
+    <!-- GRAPE STARTER DAYS -->
+    <div id="grape-days" style="display:none;">
+    <div class="section-label">Day by day — grape starter method</div>
+
+    <!-- GRAPE DAY 0 -->
+    <div class="day-card" id="gdc-0">
+      <div class="day-header" onclick="toggleGrapeDay(0)">
+        <div class="day-badge" id="gdb-0">0</div>
+        <div><div class="day-title">Day 0 — Capture the Wild Yeast</div><div class="day-subtitle">Macerate grapes with flour &amp; water</div></div>
+      </div>
+      <div class="day-body" id="gdy-0">
+        <p class="day-story">The grape starter begins differently. Instead of relying on yeast from the air and flour alone, you recruit it directly from the skins of unwashed grapes. The natural "bloom" — that dusty, slightly waxy coating you see on fresh grapes — is a colony of wild Saccharomyces yeast, the same species used in winemaking. You crush the grapes into a mixture of flour and water, and let the yeast migrate into the dough. It sounds ancient because it is.</p>
+        <div class="day-expect"><strong>What to expect:</strong> A thick, sticky, grape-tinged mixture. You'll see small grape fragments throughout. A faint sweet, fruity aroma. Nothing dramatic yet — the yeast are just beginning to colonise the flour.</div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Ingredients — Day 0</div>
+        <div class="feeding-row">
+          <div class="feeding-field">
+            <label>Unwashed grapes (crushed)</label>
+            <input type="number" id="gd0-grapes" value="100" min="0" oninput="updateConv('gd0-grapes','gd0-grapes-conv')">
+            <div class="conv" id="gd0-grapes-conv">3.53 oz · 0.42 cups</div>
+          </div>
+          <div class="feeding-field">
+            <label>Whole wheat or rye flour</label>
+            <input type="number" id="gd0-flour" value="100" min="0" oninput="updateConv('gd0-flour','gd0-flour-conv')">
+            <div class="conv" id="gd0-flour-conv">3.53 oz · 0.80 cups</div>
+          </div>
+          <div class="feeding-field">
+            <label>Water (room temp)</label>
+            <input type="number" id="gd0-water" value="100" min="0" oninput="updateConv('gd0-water','gd0-water-conv')">
+            <div class="conv" id="gd0-water-conv">3.53 oz · 0.42 cups</div>
+          </div>
+        </div>
+        <button class="log-btn" onclick="logGrapeDay(0)">Log Day 0 ✓</button>
+        <div id="glog-0"></div>
+        <div style="margin-top:1rem;font-size:12px;color:var(--mid);line-height:1.7;">
+          <strong style="color:var(--dark);">How to crush:</strong> Squeeze the grapes directly into the bowl by hand — you want the juice, pulp, and skins all in contact with the flour. The skins carry the most yeast. Use a large glass jar or ceramic bowl. Cover with a cloth (not airtight). Leave at room temperature.<br><br>
+          <strong style="color:var(--dark);">Grape choice:</strong> Red grapes tend to be more yeast-active than white. Organic or farm-bought grapes that haven't been heavily sprayed work best. Supermarket grapes work but organic is strongly preferred.
+        </div>
+      </div>
+    </div>
+
+    <!-- GRAPE DAY 1-2 -->
+    <div class="day-card" id="gdc-1">
+      <div class="day-header" onclick="toggleGrapeDay(1)">
+        <div class="day-badge" id="gdb-1">1–2</div>
+        <div><div class="day-title">Days 1 &amp; 2 — Fermentation Begins</div><div class="day-subtitle">Observe · stir daily · grape mixture still active</div></div>
+      </div>
+      <div class="day-body" id="gdy-1">
+        <p class="day-story">The grape mixture begins to ferment. You'll notice the liquid separating slightly from the flour, and a gentle fizzing or bubbling when you stir it. The smell transitions from sweet and fruity to gently alcoholic — like young wine just beginning to ferment. This is exactly right. Stir the mixture well once or twice a day to keep oxygen flowing and distribute the yeast.</p>
+        <div class="day-expect"><strong>What to expect:</strong> Visible bubbles in the liquid portions. A light, wine-like or yeasty aroma. Possible mild foaming at the surface. The grape skins will darken as they ferment.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;margin-top:1rem;">
+          <div class="feeding-field">
+            <label>Bubble activity (Day 1)</label>
+            <select id="gd1-bubbles" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:13px;color:var(--dark);">
+              <option>None yet</option><option>Faint fizzing</option><option>Visible bubbles</option><option>Active foaming</option>
+            </select>
+          </div>
+          <div class="feeding-field">
+            <label>Aroma</label>
+            <select id="gd1-smell" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:13px;color:var(--dark);">
+              <option>Sweet / fruity</option><option>Slightly alcoholic</option><option>Wine-like</option><option>Vinegary</option><option>Off / unpleasant</option>
+            </select>
+          </div>
+        </div>
+        <button class="log-btn" onclick="logGrapeDay(1)">Log Days 1–2 ✓</button>
+        <div id="glog-1"></div>
+        <div style="margin-top:1rem;font-size:12px;color:var(--mid);line-height:1.7;"><strong style="color:var(--dark);">Do not feed yet.</strong> The grape mixture needs 3–4 days to fully inoculate the flour. Stirring once or twice a day is enough. If you see white fuzzy mould (not just surface bubbles), discard and start again — this means the grapes were too heavily washed or treated.</div>
+      </div>
+    </div>
+
+    <!-- GRAPE DAY 3-4 -->
+    <div class="day-card" id="gdc-3">
+      <div class="day-header" onclick="toggleGrapeDay(3)">
+        <div class="day-badge" id="gdb-3">3–4</div>
+        <div><div class="day-title">Days 3 &amp; 4 — Strain the Grapes</div><div class="day-subtitle">Remove grapes · first flour feed</div></div>
+      </div>
+      <div class="day-body" id="gdy-3">
+        <p class="day-story">By day 3 or 4, the grape mixture should be visibly active — bubbling noticeably when stirred, smelling strongly of young wine or fruit. Now you transition: you strain out the grape solids and keep only the liquid and flour mixture. This inoculated liquid is now your starter base. The grapes have done their job. From here you feed with flour and water just like a regular starter.</p>
+        <div class="day-expect"><strong>What to expect:</strong> The strained mixture will be loose and liquid-y with a strong fruity-sour smell. After adding flour it will thicken into a paste. It will look less active than before — this is normal, the culture is adjusting to a flour-only diet.</div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:1rem;">Strain &amp; first feed</div>
+        <div class="feeding-row">
+          <div class="feeding-field">
+            <label>Strained liquid kept</label>
+            <input type="number" id="gd3-liquid" value="100" min="0" oninput="updateConv('gd3-liquid','gd3-liquid-conv')">
+            <div class="conv" id="gd3-liquid-conv">3.53 oz · 0.42 cups</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add flour (bread or wheat)</label>
+            <input type="number" id="gd3-flour" value="100" min="0" oninput="updateConv('gd3-flour','gd3-flour-conv')">
+            <div class="conv" id="gd3-flour-conv">3.53 oz · 0.80 cups</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add water if needed</label>
+            <input type="number" id="gd3-water" value="20" min="0" oninput="updateConv('gd3-water','gd3-water-conv')">
+            <div class="conv" id="gd3-water-conv">0.71 oz · 0.08 cups</div>
+          </div>
+        </div>
+        <button class="log-btn" onclick="logGrapeDay(3)">Log Days 3–4 ✓</button>
+        <div id="glog-3"></div>
+        <div style="margin-top:1rem;font-size:12px;color:var(--mid);line-height:1.7;">
+          <strong style="color:var(--dark);">How to strain:</strong> Pour the grape mixture through a fine mesh sieve or cheesecloth into a clean jar. Press the solids to extract all liquid. Discard the grape skins and seeds.<br><br>
+          <strong style="color:var(--dark);">Consistency:</strong> The final mixture should be like thick pancake batter. Add a splash more water if it's too stiff.
+        </div>
+      </div>
+    </div>
+
+    <!-- GRAPE DAY 5-7 -->
+    <div class="day-card" id="gdc-5">
+      <div class="day-header" onclick="toggleGrapeDay(5)">
+        <div class="day-badge" id="gdb-5">5–7</div>
+        <div><div class="day-title">Days 5–7 — Daily Feeding</div><div class="day-subtitle">Discard &amp; feed once daily · building strength</div></div>
+      </div>
+      <div class="day-body" id="gdy-5">
+        <p class="day-story">From here the grape starter is trained exactly like a classic starter. Discard all but a small amount each day and feed with fresh flour and water. The wild wine yeast gradually adapts to a flour-based diet while retaining some of the complex fruity character it brought from the grapes. Over these days you will notice the starter becoming more predictable — rising and falling on a cycle.</p>
+        <div class="day-expect"><strong>What to expect:</strong> Gradual strengthening over 3 days. The aroma softens from strongly fruity to a more balanced tangy-yeasty character. By day 7 you should see consistent doubling.</div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:1rem;">Daily feed (repeat each day)</div>
+        <div class="feeding-row">
+          <div class="feeding-field">
+            <label>Keep</label>
+            <input type="number" id="gd5-keep" value="25" min="0" oninput="updateConv('gd5-keep','gd5-keep-conv')">
+            <div class="conv" id="gd5-keep-conv">0.88 oz · 0.10 cups</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add flour</label>
+            <input type="number" id="gd5-flour" value="50" min="0" oninput="updateConv('gd5-flour','gd5-flour-conv')">
+            <div class="conv" id="gd5-flour-conv">1.76 oz · 0.39 cups</div>
+          </div>
+          <div class="feeding-field">
+            <label>Add water</label>
+            <input type="number" id="gd5-water" value="50" min="0" oninput="updateConv('gd5-water','gd5-water-conv')">
+            <div class="conv" id="gd5-water-conv">1.76 oz · 0.21 cups</div>
+          </div>
+        </div>
+        <button class="log-btn" onclick="logGrapeDay(5)">Log Days 5–7 ✓</button>
+        <div id="glog-5"></div>
+      </div>
+    </div>
+
+    <!-- GRAPE DAY 10-14 -->
+    <div class="day-card" id="gdc-10">
+      <div class="day-header" onclick="toggleGrapeDay(10)">
+        <div class="day-badge" id="gdb-10">10–14</div>
+        <div><div class="day-title">Days 10–14 — Ready to Bake</div><div class="day-subtitle">Float test · first loaf</div></div>
+      </div>
+      <div class="day-body" id="gdy-10">
+        <p class="day-story">Grape starters take longer to stabilise than classic starters — the wine yeast are more temperamental than the flour-adapted strains, and they need more cycles to become reliable. But by day 10 to 14, most grape starters are fully active and ready to bake. The flavour they produce is notably different: slightly more complex, with a faint fruity or winey depth in the background of your bread. Worth every extra day.</p>
+        <div class="day-expect"><strong>Ready when:</strong> Doubles within 6–10 hours of feeding (slightly slower than classic is normal). Passes the float test. Smells tangy, fruity, and pleasant — not sharp, alcoholic, or cheesy. Has visible bubbles throughout, not just surface foam.</div>
+        <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:1rem;">Final readiness check</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1rem;">
+          <div class="feeding-field">
+            <label>Float test result</label>
+            <select id="gd10-float" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:13px;color:var(--dark);">
+              <option>Not tested yet</option><option>Floated — ready!</option><option>Sank — a few more days</option><option>Partially floated</option>
+            </select>
+          </div>
+          <div class="feeding-field">
+            <label>Aroma</label>
+            <select id="gd10-smell" style="padding:0.5rem 0.75rem;background:white;border:1px solid var(--border);border-radius:3px;font-family:'Courier New',monospace;font-size:13px;color:var(--dark);">
+              <option>Tangy and fruity</option><option>Pleasantly sour</option><option>Still quite alcoholic</option><option>Sharp / vinegary</option>
+            </select>
+          </div>
+        </div>
+        <button class="log-btn" onclick="logGrapeDay(10)" style="background:#1D9E75;border-color:#1D9E75;">Grape Starter Complete! 🍇</button>
+        <div id="glog-10"></div>
+        <div style="margin-top:1.25rem;background:var(--warm);border-radius:3px;padding:1rem 1.25rem;">
+          <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;">Grape starter vs classic — what changes in the bread?</div>
+          <div style="font-size:12px;color:var(--mid);line-height:1.8;">
+            <strong style="color:var(--dark);">Flavour:</strong> Slightly more complex, with fruity or winey background notes — especially noticeable in the crust.<br>
+            <strong style="color:var(--dark);">Rise time:</strong> Often 10–20% slower than a classic starter — factor this into your bulk timing.<br>
+            <strong style="color:var(--dark);">Crumb:</strong> Tends to be slightly more open due to the different yeast strain.<br>
+            <strong style="color:var(--dark);">Maintenance:</strong> Same as a classic starter once established — fridge storage, weekly feeding.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- /grape-days -->
+
+  </div>
+
+  <!-- TIPS PANEL -->
+  <div id="panel-tips" class="panel">
+    <div class="section-label">Essential Sourdough Tips</div>
+
+    <div style="border-radius:4px;overflow:hidden;height:180px;margin-bottom:1.5rem;position:relative;">
+      <img src="https://images.unsplash.com/photo-1620921568790-c1cf8984041c?w=1200&q=85"
+           alt="Sourdough baking" loading="lazy" crossorigin="anonymous"
+           style="width:100%;height:100%;object-fit:cover;object-position:center 55%;"
+           onerror="this.parentElement.style.display='none'">
+      <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(44,31,14,0.6) 0%,transparent 65%);"></div>
+      <div style="position:absolute;bottom:1rem;left:1.25rem;">
+        <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(196,135,58,0.9);margin-bottom:4px;">Six things every baker should know</div>
+        <div style="font-family:Georgia,serif;font-size:1.3rem;color:#F5F0E8;font-style:italic;">The essentials</div>
+      </div>
+    </div>
+
+    <div class="tips-grid">
+      <div class="tip-card" style="overflow:hidden;padding:0;">
+        <div style="height:100px;overflow:hidden;"><img src="https://images.unsplash.com/photo-1608198093002-ad4e005484ec?w=600&q=80" alt="Fermentation" loading="lazy" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"></div>
+        <div style="padding:1.25rem;"><span class="tip-icon">&#127777;</span><h4>Temperature matters</h4><p>Fermentation speed doubles with every 5&#176;C rise. At 21&#176;C bulk takes 8h; at 27&#176;C just 4&#8211;5h. Use a thermometer, not a clock.</p></div>
+      </div>
+      <div class="tip-card" style="overflow:hidden;padding:0;">
+        <div style="height:100px;overflow:hidden;"><img src="https://images.unsplash.com/photo-1574085733277-851d9d856a3a?w=600&q=80" alt="Starter" loading="lazy" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"></div>
+        <div style="padding:1.25rem;"><span class="tip-icon">&#9879;</span><h4>Test your starter</h4><p>The float test: drop a spoonful of starter in water. If it floats, it is active and ready. Feed 4&#8211;12 hours before baking.</p></div>
+      </div>
+      <div class="tip-card" style="overflow:hidden;padding:0;">
+        <div style="height:100px;overflow:hidden;"><img src="https://images.unsplash.com/photo-1585478259715-1c195ae2b568?w=600&q=80" alt="Scoring" loading="lazy" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"></div>
+        <div style="padding:1.25rem;"><span class="tip-icon">&#128293;</span><h4>Score deeply</h4><p>Score at a 30&#8211;45&#176; angle, not 90&#176;. A sharp lame is essential. A bold score allows controlled oven spring rather than a blowout.</p></div>
+      </div>
+      <div class="tip-card" style="overflow:hidden;padding:0;">
+        <div style="height:100px;overflow:hidden;"><img src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=600&q=80" alt="Dutch oven" loading="lazy" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"></div>
+        <div style="padding:1.25rem;"><span class="tip-icon">&#127838;</span><h4>Steam is key</h4><p>The Dutch oven traps steam from the dough itself, keeping the crust extensible during oven spring. Do not skip this step.</p></div>
+      </div>
+      <div class="tip-card" style="overflow:hidden;padding:0;">
+        <div style="height:100px;overflow:hidden;"><img src="https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=600&q=80" alt="Cooling bread" loading="lazy" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;object-position:center 60%;" onerror="this.style.display='none'"></div>
+        <div style="padding:1.25rem;"><span class="tip-icon">&#9203;</span><h4>Wait before slicing</h4><p>Let the baked loaf cool for at least 2 hours. The crumb is still baking from residual heat. Cutting early gives a gummy crumb.</p></div>
+      </div>
+      <div class="tip-card" style="overflow:hidden;padding:0;">
+        <div style="height:100px;overflow:hidden;"><img src="https://images.unsplash.com/photo-1586444248879-bc604bc77f90?w=600&q=80" alt="Flour and water" loading="lazy" crossorigin="anonymous" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"></div>
+        <div style="padding:1.25rem;"><span class="tip-icon">&#128167;</span><h4>Hydration and flour type</h4><p>Whole wheat and rye flours absorb more water. If using 20% whole wheat, increase water by 5% to maintain the same dough consistency.</p></div>
+      </div>
+    </div>
+  </div>
+
+function showPanel(id, btn) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── FLOUR PROPERTIES ────────────────────────────────────────────────────
+  const FD = {
+    bread: { hyd: 70, sp: 20, bulkMin: 4, bulkMax: 6 },
+    wheat: { hyd: 78, sp: 25, bulkMin: 3, bulkMax: 5 },
+    rye:   { hyd: 85, sp: 30, bulkMin: 2, bulkMax: 4 }
+  };
+
+  // ── UNIT SYSTEM ──────────────────────────────────────────────────────────
+  let currentUnit = 'g';
+  let flourGrams = { bread: 360, wheat: 67, rye: 23 };
+  const UNIT_CONFIG = {
+    g:    { label: 'g',    toG: v => v,          fromG: v => v,          step: 1,   dec: 0, hint: 'Enter amounts in grams' },
+    oz:   { label: 'oz',   toG: v => v * 28.3495, fromG: v => v / 28.3495, step: 0.1, dec: 2, hint: 'Enter amounts in ounces' },
+    cups: { label: 'cups', toG: v => v * 125,     fromG: v => v / 125,     step: 0.1, dec: 2, hint: 'Enter amounts in cups (1 cup flour ≈ 125g)' },
+  };
+
+  function setUnit(unit) {
+    currentUnit = unit;
+    const cfg = UNIT_CONFIG[unit];
+    ['g','oz','cups'].forEach(u => {
+      const btn = document.getElementById('unit-' + u);
+      if (u === unit) { btn.style.background='var(--crust)'; btn.style.color='var(--crumb)'; btn.style.borderColor='var(--crust)'; }
+      else { btn.style.background='transparent'; btn.style.color='var(--muted)'; btn.style.borderColor='var(--border)'; }
+    });
+    document.getElementById('unit-hint').textContent = cfg.hint;
+    ['bread','wheat','rye'].forEach(f => {
+      document.getElementById('unit-label-' + f).textContent = cfg.label;
+      const el = document.getElementById('in-' + f);
+      el.step = cfg.step;
+      el.value = cfg.fromG(flourGrams[f]).toFixed(cfg.dec);
+    });
+  }
+
+  function recalcFromInput() {
+    const cfg = UNIT_CONFIG[currentUnit];
+    ['bread','wheat','rye'].forEach(f => {
+      const v = parseFloat(document.getElementById('in-' + f).value) || 0;
+      flourGrams[f] = cfg.toG(v);
+    });
+    recalc();
+  }
+
+  let hydOverride = false;
+  let starterOverride = false;
+  document.getElementById('hydration').addEventListener('input', () => { hydOverride = true; recalc(); });
+  document.getElementById('starter_g').addEventListener('input', () => { starterOverride = true; recalc(); });
+
+  function recalc() {
+    const breadG = Math.max(0, flourGrams.bread || 0);
+    const wheatG = Math.max(0, flourGrams.wheat || 0);
+    const ryeG   = Math.max(0, flourGrams.rye   || 0);
+    const flour  = breadG + wheatG + ryeG;
+    const salt   = parseFloat(document.getElementById('salt_pct').value) || 2.2;
+    const bPct   = flour > 0 ? breadG / flour * 100 : 0;
+    const wPct   = flour > 0 ? wheatG / flour * 100 : 0;
+    const rPct   = flour > 0 ? ryeG   / flour * 100 : 0;
+    const blendHyd = flour > 0 ? Math.round((bPct*FD.bread.hyd + wPct*FD.wheat.hyd + rPct*FD.rye.hyd)/100) : 70;
+    const blendSp  = flour > 0 ? Math.round((bPct*FD.bread.sp  + wPct*FD.wheat.sp  + rPct*FD.rye.sp )/100) : 20;
+    const blendBulkMin = Math.round((bPct*FD.bread.bulkMin + wPct*FD.wheat.bulkMin + rPct*FD.rye.bulkMin)/100);
+    const blendBulkMax = Math.round((bPct*FD.bread.bulkMax + wPct*FD.wheat.bulkMax + rPct*FD.rye.bulkMax)/100);
+    if (!hydOverride) document.getElementById('hydration').value = blendHyd;
+    if (!starterOverride) document.getElementById('starter_g').value = Math.round(flour * blendSp / 100);
+    const hyd     = parseFloat(document.getElementById('hydration').value) || blendHyd;
+    const starter = parseFloat(document.getElementById('starter_g').value) || Math.round(flour * blendSp / 100);
+    const water   = flour * hyd / 100;
+    const saltG   = flour * salt / 100;
+    const total   = flour + water + starter + saltG;
+    const g2oz   = v => (v / 28.3495).toFixed(2);
+    const g2cup  = (v, type) => {
+      // cup volumes: flour ~125g, water/liquid ~240g, salt use tsp (1 tsp ~6g)
+      if (type === 'salt') return (v / 6).toFixed(2) + ' tsp';
+      const cupG = type === 'water' ? 240 : 125;
+      return (v / cupG).toFixed(2) + ' c';
+    };
+    // Blend info
+    document.getElementById('blend-hyd').textContent  = blendHyd + '%';
+    document.getElementById('blend-sp').textContent   = blendSp + '%';
+    document.getElementById('blend-bulk').textContent = blendBulkMin + '-' + blendBulkMax + ' hrs';
+    let char = 'Open crumb, chewy';
+    if (rPct >= 30) char = 'Dense, moist, earthy';
+    else if (rPct >= 15) char = 'Semi-open, nutty';
+    else if (wPct >= 40) char = 'Wholesome, fibrous';
+    else if (wPct >= 20) char = 'Slightly dense, nutty';
+    document.getElementById('blend-char').textContent = char;
+    // % badges next to inputs
+    document.getElementById('pct-bread').textContent = flour > 0 ? Math.round(bPct) + '%' : '0%';
+    document.getElementById('pct-wheat').textContent = flour > 0 ? Math.round(wPct) + '%' : '0%';
+    document.getElementById('pct-rye').textContent   = flour > 0 ? Math.round(rPct) + '%' : '0%';
+    // Total label
+    const cfg = UNIT_CONFIG[currentUnit];
+    document.getElementById('total-flour-g').textContent = currentUnit === 'g'
+      ? Math.round(flour) + 'g'
+      : cfg.fromG(flour).toFixed(cfg.dec) + ' ' + cfg.label + '  (' + Math.round(flour) + 'g)';
+    // Blend bar
+    document.getElementById('bar-bread').style.width = Math.round(bPct) + '%';
+    document.getElementById('bar-wheat').style.width = Math.round(wPct) + '%';
+    document.getElementById('bar-rye').style.width   = Math.round(rPct) + '%';
+    // Hydration bar
+    document.getElementById('hyd-bar').style.width = Math.min(100, hyd) + '%';
+    document.getElementById('hyd-pct-label').textContent = hyd + '%';
+    // Table rows
+    document.getElementById('row-bread').style.display = breadG > 0 ? '' : 'none';
+    document.getElementById('row-wheat').style.display = wheatG > 0 ? '' : 'none';
+    document.getElementById('row-rye').style.display   = ryeG   > 0 ? '' : 'none';
+    document.getElementById('b-bread').textContent    = Math.round(breadG) + 'g';
+    document.getElementById('b-bread-oz').textContent = g2oz(breadG) + ' oz';
+    document.getElementById('b-bread-lb').textContent = g2cup(breadG, 'flour');
+    document.getElementById('b-bread-pct').textContent = Math.round(bPct) + '%';
+    document.getElementById('b-wheat').textContent    = Math.round(wheatG) + 'g';
+    document.getElementById('b-wheat-oz').textContent = g2oz(wheatG) + ' oz';
+    document.getElementById('b-wheat-lb').textContent = g2cup(wheatG, 'flour');
+    document.getElementById('b-wheat-pct').textContent = Math.round(wPct) + '%';
+    document.getElementById('b-rye').textContent    = Math.round(ryeG) + 'g';
+    document.getElementById('b-rye-oz').textContent = g2oz(ryeG) + ' oz';
+    document.getElementById('b-rye-lb').textContent = g2cup(ryeG, 'flour');
+    document.getElementById('b-rye-pct').textContent = Math.round(rPct) + '%';
+    document.getElementById('b-flour-total').textContent    = Math.round(flour) + 'g';
+    document.getElementById('b-flour-total-oz').textContent = g2oz(flour) + ' oz';
+    document.getElementById('b-flour-total-lb').textContent = g2cup(flour, 'flour');
+    document.getElementById('b-water').textContent    = Math.round(water) + 'g';
+    document.getElementById('b-water-oz').textContent = g2oz(water) + ' oz';
+    document.getElementById('b-water-lb').textContent = g2cup(water, 'water');
+    document.getElementById('b-water-pct').textContent = hyd + '%';
+    document.getElementById('b-starter').textContent    = Math.round(starter) + 'g';
+    document.getElementById('b-starter-oz').textContent = g2oz(starter) + ' oz';
+    document.getElementById('b-starter-lb').textContent = g2cup(starter, 'water');
+    document.getElementById('b-starter-pct').textContent = flour > 0 ? Math.round(starter/flour*100) + '%' : '0%';
+    document.getElementById('b-salt').textContent    = saltG.toFixed(1) + 'g';
+    document.getElementById('b-salt-oz').textContent = g2oz(saltG) + ' oz';
+    document.getElementById('b-salt-lb').textContent = g2cup(saltG, 'salt');
+    document.getElementById('b-salt-pct').textContent = salt + '%';
+    document.getElementById('r-total').textContent     = Math.round(total);
+    document.getElementById('r-total-oz').textContent  = (total/28.3495).toFixed(1);
+    document.getElementById('r-total-lbs').textContent = (flour/125).toFixed(2);
+  }
+
+  // Init
+  recalc();
+
+  // ── RECIPE DATA ─────────────────────────────────────────────────────────
+  const RECIPES = {
+    country: {
+      title: 'Country Sourdough',
+      subtitle: 'Classic · 900g loaf · Beginner',
+      accent: 'linear-gradient(90deg,#C4873A,#8B5E1E)',
+      desc: 'The definitive open-crumb sourdough. 100% bread flour, 70% hydration, cold proofed overnight for maximum flavour development.',
+      ingredients: [
+        ['Bread flour', '450g', '15.87 oz', '0.992 lb', '100%'],
+        ['Water (lukewarm)', '315g', '11.11 oz', '0.694 lb', '70%'],
+        ['Active starter', '90g', '3.17 oz', '0.198 lb', '20%'],
+        ['Fine sea salt', '10g', '0.35 oz', '0.022 lb', '2.2%'],
+      ],
+      nutrition: [['Calories','270 kcal'],['Protein','9g'],['Carbs','52g'],['Fat','1.5g'],['Fibre','3g']],
+      steps: [
+        ['Autolyse','Mix flour and water until no dry flour remains. Cover and rest. This hydrates the flour and begins gluten development without kneading.','⏱ 45 min rest','https://images.unsplash.com/photo-1586444248879-bc604bc77f90?w=900&q=80',null],
+        ['Add starter & salt','Add active starter and salt. Use the pinch-and-fold method to incorporate evenly. The dough will feel shaggy at first — keep going.','⏱ 5 min','https://images.unsplash.com/photo-1574085733277-851d9d856a3a?w=900&q=80',null],
+        ['Bulk fermentation','Every 30 min perform a set of stretch and folds: grab, stretch up, fold over. Rotate 90° and repeat 4 times per set. Do 4 sets total.','⏱ 4–6 hrs at 24°C','https://images.unsplash.com/photo-1608198093002-ad4e005484ec?w=900&q=80',null],
+        ['Pre-shape & bench rest','Turn onto an unfloured surface. Use a bench scraper to shape into a loose round, creating surface tension. Rest uncovered.','⏱ 30 min','https://images.unsplash.com/photo-1585478259715-1c195ae2b568?w=900&q=80',{tool:'bench scraper',sub:'Use a flat spatula or even a credit card to fold and scrape \u2014 the goal is just to create surface tension.'}],
+        ['Final shape','Flip the dough, fold in sides, roll toward you to create a tight boule. Place seam-side up in a well-floured banneton.','⏱ 10 min','https://images.unsplash.com/photo-1620921568790-c1cf8984041c?w=900&q=80',{tool:'banneton',sub:'Use a medium mixing bowl lined with a well-floured linen cloth or a clean tea towel dusted generously with rice flour to prevent sticking.'}],
+        ['Cold proof','Cover banneton loosely and refrigerate overnight. Slow cold fermentation develops deep, complex flavour.','⏱ 8–16 hrs in fridge','https://images.unsplash.com/photo-1509440159596-0249088772ff?w=900&q=80',null],
+        ['Bake','Preheat oven to 250°C with Dutch oven inside for 1 hr. Score cold dough, drop into Dutch oven. Lid on for first 20 min, then uncover until deep amber.','⏱ 20 min covered + 20 min open','https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=900&q=80',{tool:'Dutch oven',sub:'Use any heavy oven-safe pot with a lid: a cast iron casserole, a deep roasting dish with foil on top, or a large clay pot. The lid traps steam; shape is secondary.'}],
+      ],
+      tips: ['Use bread flour with at least 12% protein for best gluten development.','The dough is ready to shape when it has grown 50–75% and is jiggly but holds its shape.'],
+    },
+    rye: {
+      title: 'Dark Rye Sourdough (Roggenbrot)',
+      subtitle: 'German · 800g loaf · Intermediate',
+      accent: 'linear-gradient(90deg,#4A2C0E,#6B4C2A)',
+      desc: 'Authentic German Roggenbrot with 80% dark rye. Dense, moist, and deeply earthy — baked in a tin because rye lacks gluten structure to hold a free-form shape. Keeps for up to a week.',
+      ingredients: [
+        ['Dark rye flour', '360g', '12.70 oz', '0.794 lb', '80%'],
+        ['Bread flour', '90g', '3.17 oz', '0.198 lb', '20%'],
+        ['Water (warm 35°C)', '382g', '13.47 oz', '0.842 lb', '85%'],
+        ['Rye starter (100% hyd)', '135g', '4.76 oz', '0.298 lb', '30%'],
+        ['Fine sea salt', '10g', '0.35 oz', '0.022 lb', '2.2%'],
+        ['Caraway seeds (opt)', '10g', '0.35 oz', '0.022 lb', '2.2%'],
+      ],
+      nutrition: [['Calories','220 kcal'],['Protein','7g'],['Carbs','46g'],['Fat','1g'],['Fibre','7g']],
+      steps: [
+        ['Mix','Combine all ingredients in a large bowl. Rye dough does not need kneading — stir vigorously with a dough scraper for 3–4 minutes until a thick, sticky paste forms.','⏱ 5 min','https://images.unsplash.com/photo-1574085733277-851d9d856a3a?w=900&q=80',{tool:'dough scraper',sub:'A sturdy wooden spoon or silicone spatula works fine. Rye is more of a thick batter than a dough, so no special tool is needed.'}],
+        ['First fermentation','Cover bowl tightly and ferment at room temperature. The dough will bubble and expand. Do not fold — rye has no gluten structure to build.','⏱ 3–4 hrs at 24°C','https://images.unsplash.com/photo-1608198093002-ad4e005484ec?w=900&q=80',null],
+        ['Shape & tin','Wet your hands (dough is very sticky). Transfer to a greased 1kg loaf tin and smooth the top with wet fingers. It should fill the tin about halfway.','⏱ 10 min','https://images.unsplash.com/photo-1509440159596-0249088772ff?w=900&q=80',{tool:'loaf tin',sub:'Any deep oven-safe rectangular dish works: a ceramic casserole dish or a well-greased cake tin. Line with parchment paper for easy removal.'}],
+        ['Proof in tin','Cover tin with cling film. Proof until dough reaches the rim and small bubbles appear on the surface — do not over-proof.','⏱ 1–2 hrs','https://images.unsplash.com/photo-1586444248879-bc604bc77f90?w=900&q=80',{tool:'cling film',sub:'A damp tea towel draped over the tin works just as well. It keeps moisture in without suffocating the dough.'}],
+        ['Bake','Bake at 240°C for 15 min, then reduce to 200°C and continue baking. The loaf is done when internal temp reaches 98°C.','⏱ 15 min high + 45 min low heat','https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=900&q=80',{tool:'thermometer',sub:'Tap the bottom of the loaf — a hollow sound means it is cooked through. The loaf will also pull slightly away from the tin sides when done.'}],
+        ['Rest (critical)','This is non-negotiable: wrap the hot loaf in a clean towel and rest for 24 hours before slicing. The crumb needs time to set — cutting early gives a gummy result.','⏱ 24 hrs wrapped','https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=900&q=80',null],
+      ],
+      tips: ['The starter must be a rye starter (fed with rye flour) for best fermentation activity.','Wet hands are essential — rye dough sticks to everything. Keep a bowl of water nearby.','Caraway seeds are traditional and complement the earthiness perfectly.'],
+    },
+    seeded: {
+      title: 'Seeded Sourdough',
+      subtitle: 'Sunflower · Pumpkin · Sesame · 950g loaf',
+      accent: 'linear-gradient(90deg,#C4873A,#5A8A3A)',
+      desc: 'A showstopper loaf packed with toasted seeds inside and crusted on the outside. The seeds add crunch, nuttiness, and extra nutrition to a base of mostly bread flour.',
+      ingredients: [
+        ['Bread flour', '400g', '14.11 oz', '0.882 lb', '100%'],
+        ['Water', '288g', '10.16 oz', '0.635 lb', '72%'],
+        ['Active starter', '80g', '2.82 oz', '0.176 lb', '20%'],
+        ['Fine sea salt', '9g', '0.32 oz', '0.020 lb', '2.2%'],
+        ['Sunflower seeds', '50g', '1.76 oz', '0.110 lb', 'toasted'],
+        ['Pumpkin seeds', '40g', '1.41 oz', '0.088 lb', 'toasted'],
+        ['Sesame seeds', '30g', '1.06 oz', '0.066 lb', 'white + black'],
+        ['Extra sesame for crust', '20g', '0.71 oz', '0.044 lb', 'optional'],
+      ],
+      nutrition: [['Calories','295 kcal'],['Protein','10g'],['Carbs','44g'],['Fat','9g'],['Fibre','4g']],
+      steps: [
+        ['Toast seeds','Dry-toast sunflower and pumpkin seeds in a frying pan over medium heat for 3–4 min until golden. Set aside to cool completely. Do not toast sesame — they go in raw.','⏱ 5 min','https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=900&q=80',{tool:'frying pan',sub:'Spread seeds on a baking tray and toast in the oven at 160°C for 8-10 min, shaking once halfway. Watch closely, they burn fast.'}],
+        ['Autolyse','Mix flour and water until no dry flour remains. Cover and rest.','⏱ 45 min','https://images.unsplash.com/photo-1586444248879-bc604bc77f90?w=900&q=80',null],
+        ['Add starter & salt','Add starter and salt, incorporate with pinch-and-fold.','⏱ 5 min','https://images.unsplash.com/photo-1574085733277-851d9d856a3a?w=900&q=80',null],
+        ['Bulk + add seeds','After first stretch & fold, add all seeds. Perform 4 sets of stretch and folds every 30 min. Seeds distribute naturally through folding.','⏱ 4–5 hrs at 24°C','https://images.unsplash.com/photo-1608198093002-ad4e005484ec?w=900&q=80',null],
+        ['Pre-shape & rest','Turn onto unfloured surface, shape into a rough round. Rest uncovered.','⏱ 30 min','https://images.unsplash.com/photo-1585478259715-1c195ae2b568?w=900&q=80',{tool:'bench scraper',sub:'A flat spatula or the back of a large spoon can fold and move the dough. The goal is just to build a little surface tension.'}],
+        ['Seed the banneton','Scatter sesame seeds generously across the bottom of the banneton (this becomes the top crust). Shape dough into a tight boule and place seam-side up on the sesame.','⏱ 10 min','https://images.unsplash.com/photo-1620921568790-c1cf8984041c?w=900&q=80',{tool:'banneton',sub:'Line a medium bowl with a well-floured tea towel and scatter sesame seeds across the cloth. The cloth becomes your proofing vessel and works perfectly.'}],
+        ['Cold proof','Cover and refrigerate overnight.','⏱ 8–14 hrs','https://images.unsplash.com/photo-1509440159596-0249088772ff?w=900&q=80',null],
+        ['Bake','Preheat oven to 250°C with Dutch oven. Turn dough out onto parchment (sesame side now facing up), score boldly, and bake 20 min covered then 20 min open until deep brown.','⏱ 40 min total','https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=900&q=80',{tool:'Dutch oven',sub:'A deep roasting tin covered tightly with foil for the first 20 min creates enough steam. Remove the foil for the final browning.'}],
+      ],
+      tips: ['Toasting seeds before adding intensifies flavour significantly — do not skip this.','The sesame crust on the outside is optional but visually stunning and adds great texture.','You can swap seeds freely: flaxseed, poppy, hemp all work well.'],
+    },
+    wholewheat: {
+      title: 'Whole Wheat Country Loaf',
+      subtitle: 'Whole grain · 850g loaf · Beginner',
+      accent: 'linear-gradient(90deg,#8B5E1E,#C4873A)',
+      desc: '50% whole wheat, 50% bread flour. Wholesome and nutty with a still-open crumb. The bran slightly weakens gluten, so extra hydration and a slightly higher starter percentage keeps the dough lively.',
+      ingredients: [
+        ['Whole wheat flour', '225g', '7.94 oz', '0.496 lb', '50%'],
+        ['Bread flour', '225g', '7.94 oz', '0.496 lb', '50%'],
+        ['Water', '337g', '11.89 oz', '0.743 lb', '75%'],
+        ['Active starter', '99g', '3.49 oz', '0.218 lb', '22%'],
+        ['Fine sea salt', '10g', '0.35 oz', '0.022 lb', '2.2%'],
+      ],
+      nutrition: [['Calories','255 kcal'],['Protein','9g'],['Carbs','50g'],['Fat','1.5g'],['Fibre','5g']],
+      steps: [
+        ['Autolyse','Mix both flours and water until combined. Whole wheat absorbs water more slowly — rest slightly longer than a white flour dough.','⏱ 60 min rest','https://images.unsplash.com/photo-1586444248879-bc604bc77f90?w=900&q=80',null],
+        ['Add starter & salt','Add starter and salt. Incorporate with pinch-and-fold until smooth.','⏱ 5 min','https://images.unsplash.com/photo-1574085733277-851d9d856a3a?w=900&q=80',null],
+        ['Bulk fermentation','Perform 4 sets of stretch and folds every 30 min. Whole wheat ferments faster than white — watch the dough, not the clock.','⏱ 3–5 hrs at 24°C','https://images.unsplash.com/photo-1608198093002-ad4e005484ec?w=900&q=80',null],
+        ['Pre-shape & bench rest','Shape into a rough round on an unfloured surface. Rest uncovered.','⏱ 25 min','https://images.unsplash.com/photo-1585478259715-1c195ae2b568?w=900&q=80',{tool:'bench scraper',sub:'Use a flat spatula or the back of a large spoon to fold and tuck the dough into a round. The idea is gentle tension — not perfection.'}],
+        ['Final shape','Shape into a tight boule or batard. Place seam-side up in a well-floured banneton. Dust with whole wheat flour to prevent sticking.','⏱ 10 min','https://images.unsplash.com/photo-1620921568790-c1cf8984041c?w=900&q=80',{tool:'banneton',sub:'A bowl lined with a heavily floured tea towel is a perfect substitute. Whole wheat sticks less than white, just make sure the cloth is generously dusted.'}],
+        ['Cold proof','Cover and refrigerate overnight.','⏱ 8–14 hrs in fridge','https://images.unsplash.com/photo-1509440159596-0249088772ff?w=900&q=80',null],
+        ['Bake','Preheat oven to 250°C with Dutch oven. Score and bake 20 min covered, then 18–20 min uncovered. Whole wheat loaves colour faster — keep an eye on it.','⏱ 38–40 min total','https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=900&q=80',{tool:'Dutch oven',sub:'A heavy casserole pot with a tight lid is ideal. Alternatively, bake on a preheated stone and place a tray of boiling water on the oven floor for steam.'}],
+      ],
+      tips: ['Whole wheat absorbs more water over time — the dough will tighten up after autolyse.','Fermentation is faster with whole wheat due to more wild yeast on the bran — start checking bulk at 3 hours.','For a more open crumb, reduce whole wheat to 30% and increase bread flour.'],
+    },
+    focaccia: {
+      title: 'Olive & Rosemary Focaccia',
+      subtitle: 'Italian · 30×40cm pan · Beginner',
+      accent: 'linear-gradient(90deg,#3B6D11,#C4873A)',
+      desc: 'The easiest sourdough bake. No shaping, no banneton, no scoring. Just pour the dough into an oiled pan, dimple with your fingers, and load with olives and rosemary. The result is pillowy with a shatteringly crisp, golden base.',
+      ingredients: [
+        ['Bread flour', '500g', '17.64 oz', '1.102 lb', '100%'],
+        ['Water (room temp)', '400g', '14.11 oz', '0.882 lb', '80%'],
+        ['Active starter', '100g', '3.53 oz', '0.220 lb', '20%'],
+        ['Fine sea salt', '11g', '0.39 oz', '0.024 lb', '2.2%'],
+        ['Olive oil (in dough)', '40g', '1.41 oz', '0.088 lb', '8%'],
+        ['Olive oil (for pan)', '60g', '2.12 oz', '0.132 lb', 'generous'],
+        ['Pitted olives', '80g', '2.82 oz', '0.176 lb', 'halved'],
+        ['Fresh rosemary', '8g', '0.28 oz', '0.018 lb', '4–5 sprigs'],
+        ['Flaky sea salt', '4g', '0.14 oz', '0.009 lb', 'to finish'],
+      ],
+      nutrition: [['Calories','285 kcal'],['Protein','7g'],['Carbs','46g'],['Fat','8g'],['Fibre','2g']],
+      steps: [
+        ['Mix','Combine flour, water, starter, and salt. Mix until no dry flour remains — this dough is very wet and sticky, that is correct. Add the 40g olive oil and mix until absorbed.','⏱ 5 min','https://images.unsplash.com/photo-1574085733277-851d9d856a3a?w=900&q=80',null],
+        ['Bulk fermentation with coil folds','Every 30 min, perform coil folds: wet your hands, lift the centre of the dough, let both ends fold under. Rotate 180° and repeat. Do 4 sets. The dough will become smooth and airy.','⏱ 4–5 hrs at 24°C','https://images.unsplash.com/photo-1608198093002-ad4e005484ec?w=900&q=80',null],
+        ['Oil the pan','Pour the 60g olive oil into a 30×40cm baking pan and spread across the base and sides generously. More oil than you think — this is what creates the crisp bottom.','⏱ 2 min','https://images.unsplash.com/photo-1571167366136-b57e4d3999dc?w=900&q=80',{tool:'baking pan',sub:'Any large oven-safe dish works: a cast iron skillet, a ceramic baking dish, or a deep-rimmed sheet pan. The key is sides to contain the dough as it rises.'}],
+        ['Transfer & first pan rest','Gently tip the dough into the oiled pan. Fold it onto itself once, flip it over in the oil to coat, and leave it. Do not press or stretch yet.','⏱ 30 min rest','https://images.unsplash.com/photo-1586444248879-bc604bc77f90?w=900&q=80',null],
+        ['Dimple & top','Oil your fingertips well. Stretch the dough toward the pan corners using the dimpling motion — press firmly down to the base. Scatter halved olives and rosemary sprigs across the surface, pressing them gently in. Finish with flaky salt.','⏱ 10 min','https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=900&q=80',{tool:'flaky salt',sub:'Regular fine sea salt works too, use a little less as it dissolves faster. Coarse kosher salt is another good option for a satisfying crunch.'}],
+        ['Final proof','Cover pan with cling film or a damp towel and proof at room temperature until the dough is very puffy and fills the pan with visible bubbles near the surface.','⏱ 1.5–2.5 hrs','https://images.unsplash.com/photo-1509440159596-0249088772ff?w=900&q=80',{tool:'cling film',sub:'A damp tea towel, a large plate, or a baking sheet placed on top works perfectly. Anything that loosely covers the pan and keeps the surface from drying out.'}],
+        ['Bake','Place pan on the lowest oven rack. Bake at 230°C until the top is deep golden and the edges are visibly crisp. Lift a corner to check the base — it should be golden-brown.','⏱ 22–26 min','https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=900&q=80',null],
+        ['Rest & slice','Transfer to a wire rack immediately — leaving it in the pan traps steam and softens the base. Rest briefly before slicing into squares.','⏱ 10 min rest','https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=900&q=80',{tool:'wire rack',sub:'Rest the focaccia directly on a wooden chopping board — it lets air circulate underneath almost as well, and the wood will not conduct heat back into the base.'}],
+      ],
+      tips: [
+        'Do not skimp on the olive oil in the pan — it is what creates the legendary crisp, almost fried bottom crust.',
+        'Focaccia is one of the most forgiving sourdough bakes: the dough goes straight from bowl to pan with no shaping skill required.',
+        'Variations: cherry tomatoes + thyme, caramelised onion + thyme, or simply flaky salt and good olive oil.',
+        'Leftover focaccia reheats brilliantly at 200°C for 5 min, or slice and use for sandwiches the next day.',
+      ],
+    },
+  };
+
+  function openRecipe(id) {
+    const r = RECIPES[id];
+    const g2oz = v => v; // already formatted in data
+
+    let ingRows = r.ingredients.map(([name, g, oz, lb, pct]) =>
+      `<tr><td>${name}</td><td class="num">${g}</td><td class="num">${oz}</td><td class="num">${lb}</td><td class="num">${pct}</td></tr>`
+    ).join('');
+
+    let nutRows = r.nutrition.map(([n, v]) =>
+      `<tr><td>${n}</td><td class="num">${v}</td></tr>`
+    ).join('');
+
+    let stepHtml = r.steps.map(([title, desc, timing, img, alt], i) => `
+      <div class="step" style="flex-direction:column;gap:0;padding-bottom:1.5rem;">
+        <div style="display:flex;gap:1.25rem;align-items:flex-start;margin-bottom:${img ? '0.875rem' : '0'};">
+          <div class="step-num" style="margin-top:2px;">${i+1}</div>
+          <div class="step-content" style="flex:1;">
+            <h4>${title}</h4>
+            <p>${desc}</p>
+            <span class="timing">${timing}</span>
+          </div>
+        </div>
+        ${img ? `<div style="margin-left:44px;border-radius:4px;overflow:hidden;background:var(--warm);aspect-ratio:16/7;display:flex;align-items:center;justify-content:center;margin-bottom:${alt ? '0.75rem' : '0'};"><img src="${img}" alt="${title}" style="width:100%;height:100%;object-fit:cover;" loading="lazy" crossorigin="anonymous" onerror="this.parentElement.style.display='none'"></div>` : ''}
+        ${alt ? `<div style="margin-left:44px;background:rgba(196,135,58,0.08);border-left:3px solid var(--crust);border-radius:0 3px 3px 0;padding:0.6rem 0.875rem;font-size:11px;color:var(--mid);line-height:1.65;"><strong style="color:var(--crust-dark);">No ${alt.tool}?</strong> ${alt.sub}</div>` : ''}
+      </div>`
+    ).join('');
+
+    let tipsHtml = r.tips.map(t => `<li style="font-size:12px;color:var(--mid);line-height:1.7;margin-bottom:6px;">${t}</li>`).join('');
+
+    document.getElementById('recipe-detail-content').innerHTML = `
+      <div style="height:5px;background:${r.accent};border-radius:3px 3px 0 0;margin-bottom:0;"></div>
+      <div style="background:var(--crumb);border:1px solid var(--border);border-top:none;border-radius:0 0 4px 4px;padding:1.5rem;margin-bottom:1.5rem;">
+        <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:var(--crust);margin-bottom:6px;">${r.subtitle}</div>
+        <h2 style="font-family:Georgia,serif;font-size:1.6rem;color:var(--dark);margin-bottom:8px;">${r.title}</h2>
+        <p style="font-size:13px;color:var(--mid);line-height:1.7;">${r.desc}</p>
+      </div>
+
+      <div class="recipe-grid" style="margin-bottom:1.5rem;">
+        <div class="card">
+          <h3>Ingredients</h3>
+          <table class="ing-table">
+            <thead><tr><th>Ingredient</th><th class="num">Grams</th><th class="num">Oz</th><th class="num">Lbs</th><th class="num">%</th></tr></thead>
+            <tbody>${ingRows}</tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Nutrition (per 100g)</h3>
+          <table class="ing-table">
+            <thead><tr><th>Nutrient</th><th class="num">Amount</th></tr></thead>
+            <tbody>${nutRows}</tbody>
+          </table>
+          <div style="margin-top:1rem;padding-top:0.875rem;border-top:1px solid var(--border);">
+            <div style="font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Baker's tips</div>
+            <ul style="list-style:none;padding:0;">${tipsHtml}</ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-label">Method</div>
+      <div class="card"><div class="steps">${stepHtml}</div></div>
+    `;
+
+    document.getElementById('recipe-library').style.display = 'none';
+    document.getElementById('recipe-detail').style.display = 'block';
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  function closeRecipe() {
+    document.getElementById('recipe-detail').style.display = 'none';
+    document.getElementById('recipe-library').style.display = 'block';
+  }
+
+
+
+  // ── STARTER JOURNAL ──────────────────────────────────────────────────────
+  let starterUnit = 'g';
+  const SU = {
+    g:   { label: 'g',   toDisplay: v => v,              fromG: v => v,           dec: 0,
+           waterLabel: v => (v/28.3495).toFixed(2)+' oz · '+(v/240).toFixed(2)+' cups',
+           flourLabel: v => (v/28.3495).toFixed(2)+' oz · '+(v/125).toFixed(2)+' cups' },
+    oz:  { label: 'oz',  toDisplay: v => (v/28.3495).toFixed(2), fromG: v => v*28.3495, dec: 2,
+           waterLabel: v => Math.round(v)+'g · '+(v/240).toFixed(2)+' cups',
+           flourLabel: v => Math.round(v)+'g · '+(v/125).toFixed(2)+' cups' },
+    cup: { label: 'cups',toDisplay: v => v,              fromG: v => v,           dec: 2,
+           waterLabel: v => Math.round(v)+'g · '+(v/28.3495).toFixed(2)+' oz',
+           flourLabel: v => Math.round(v)+'g · '+(v/28.3495).toFixed(2)+' oz' },
+  };
+
+  function setStarterUnit(unit) {
+    starterUnit = unit;
+    ['g','oz','cup'].forEach(u => {
+      const btn = document.getElementById('su-' + u);
+      if (u === unit) { btn.style.background='var(--crust)'; btn.style.color='var(--crumb)'; btn.style.borderColor='var(--crust)'; }
+      else { btn.style.background='transparent'; btn.style.color='var(--muted)'; btn.style.borderColor='var(--border)'; }
+    });
+    // Refresh all conv labels
+    const allConvInputs = [
+      ['d0-flour','d0-flour-conv','flour'],['d0-water','d0-water-conv','water'],
+      ['d2-keep','d2-keep-conv','flour'],['d2-flour','d2-flour-conv','flour'],['d2-water','d2-water-conv','water'],
+      ['d3-keep','d3-keep-conv','flour'],['d3-flour','d3-flour-conv','flour'],['d3-water','d3-water-conv','water'],
+      ['d4a-keep','d4a-keep-conv','flour'],['d4a-flour','d4a-flour-conv','flour'],['d4a-water','d4a-water-conv','water'],
+      ['d4b-keep','d4b-keep-conv','flour'],['d4b-flour','d4b-flour-conv','flour'],['d4b-water','d4b-water-conv','water'],
+      ['d5-keep','d5-keep-conv','flour'],['d5-flour','d5-flour-conv','flour'],['d5-water','d5-water-conv','water'],
+      ['d6-keep','d6-keep-conv','flour'],['d6-flour','d6-flour-conv','flour'],['d6-water','d6-water-conv','water'],
+      ['d7-keep','d7-keep-conv','flour'],['d7-flour','d7-flour-conv','flour'],['d7-water','d7-water-conv','water'],
+    ];
+    allConvInputs.forEach(([inId, convId, type]) => updateConv(inId, convId, type));
+  }
+
+  function updateConv(inputId, convId, type) {
+    const el = document.getElementById(inputId);
+    const convEl = document.getElementById(convId);
+    if (!el || !convEl) return;
+    const grams = parseFloat(el.value) || 0;
+    const cfg = SU['g']; // inputs are always in grams
+    if (type === 'water') {
+      convEl.textContent = (grams/28.3495).toFixed(2)+' oz  ·  '+(grams/240).toFixed(2)+' cups';
+    } else {
+      convEl.textContent = (grams/28.3495).toFixed(2)+' oz  ·  '+(grams/125).toFixed(2)+' cups';
+    }
+  }
+
+  let completedDays = new Set();
+
+  function toggleDay(day) {
+    const body = document.getElementById('dy-' + day);
+    const card = document.getElementById('dc-' + day);
+    const isOpen = body.classList.contains('open');
+    // Close all
+    document.querySelectorAll('.day-body').forEach(b => b.classList.remove('open'));
+    document.querySelectorAll('.day-card').forEach(c => c.classList.remove('day-active'));
+    if (!isOpen) {
+      body.classList.add('open');
+      card.classList.add('day-active');
+    }
+  }
+
+  function logDay(day) {
+    completedDays.add(day);
+    const badge = document.getElementById('db-' + day);
+    badge.classList.add('done');
+    badge.textContent = '✓';
+
+    // Build log message
+    let msg = 'Day ' + day + ' logged';
+    if (day === 0) {
+      const f = document.getElementById('d0-flour').value || 0;
+      const w = document.getElementById('d0-water').value || 0;
+      msg = 'Day 0: Mixed ' + f + 'g flour + ' + w + 'g water. Starter created!';
+    } else if (day === 1) {
+      const b = document.getElementById('d1-bubbles').value;
+      const s = document.getElementById('d1-smell').value;
+      const t = document.getElementById('d1-temp').value || '—';
+      msg = 'Day 1: Activity: ' + b + ' · Smell: ' + s + ' · Temp: ' + t;
+    } else if ([2,3].includes(day)) {
+      const k = document.getElementById('d'+day+'-keep').value || 0;
+      const f = document.getElementById('d'+day+'-flour').value || 0;
+      const w = document.getElementById('d'+day+'-water').value || 0;
+      msg = 'Day '+day+': Kept '+k+'g · Fed '+f+'g flour + '+w+'g water';
+    } else if (day === 4) {
+      const k = document.getElementById('d4a-keep').value || 0;
+      const f = document.getElementById('d4a-flour').value || 0;
+      const w = document.getElementById('d4a-water').value || 0;
+      const k2 = document.getElementById('d4b-keep').value || 0;
+      const f2 = document.getElementById('d4b-flour').value || 0;
+      const w2 = document.getElementById('d4b-water').value || 0;
+      msg = 'Day 4: AM — kept '+k+'g, fed '+f+'+'+w+'g  |  PM — kept '+k2+'g, fed '+f2+'+'+w2+'g';
+    } else if (day === 5) {
+      const k = document.getElementById('d5-keep').value || 0;
+      const f = document.getElementById('d5-flour').value || 0;
+      const w = document.getElementById('d5-water').value || 0;
+      const h1 = document.getElementById('d5-height-before').value || '—';
+      const h2 = document.getElementById('d5-height-peak').value || '—';
+      msg = 'Day 5: Fed '+f+'g+'+w+'g · Start height: '+h1+' → Peak: '+h2;
+    } else if (day === 6) {
+      const k = document.getElementById('d6-keep').value || 0;
+      const f = document.getElementById('d6-flour').value || 0;
+      const w = document.getElementById('d6-water').value || 0;
+      const fl = document.getElementById('d6-float').value;
+      msg = 'Day 6: Fed '+f+'g+'+w+'g · Float test: '+fl;
+    } else if (day === 7) {
+      const f = document.getElementById('d7-flour').value || 0;
+      const w = document.getElementById('d7-water').value || 0;
+      msg = 'Day 7: Final feed ' + f + 'g flour + ' + w + 'g water. Starter is READY!';
+    }
+
+    const logEl = document.getElementById('log-' + day);
+    const now = new Date();
+    const time = now.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) + ' ' + now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    logEl.innerHTML += '<div class="log-entry">' + time + ' — ' + msg + '</div>';
+
+    // Update progress bar
+    const pct = Math.round((completedDays.size / 8) * 100);
+    document.getElementById('starter-progress-bar').style.width = pct + '%';
+    document.getElementById('starter-progress-label').textContent = 'Day ' + Math.max(...completedDays) + ' of 7';
+    if (completedDays.size >= 8) {
+      document.getElementById('starter-progress-label').textContent = 'Complete! Ready to bake';
+    }
+  }
+
+  // Open day 0 by default when tab opens
+  document.getElementById('dy-0').classList.add('open');
+  document.getElementById('dc-0').classList.add('day-active');
+
+
+  // ── STARTER METHOD TOGGLE ────────────────────────────────────────────────
+  let starterMethod = 'classic';
+
+  function setStarterMethod(method) {
+    starterMethod = method;
+    const classicBtn = document.getElementById('method-classic');
+    const grapeBtn   = document.getElementById('method-grape');
+    const classicDays = document.getElementById('classic-days');
+    const grapeDays   = document.getElementById('grape-days');
+    const grapeInfo   = document.getElementById('grape-info');
+
+    if (method === 'classic') {
+      classicBtn.style.background = 'var(--crust)'; classicBtn.style.borderColor = 'var(--crust)';
+      classicBtn.querySelector('div').style.color = 'var(--crumb)';
+      classicBtn.querySelectorAll('div')[1].style.color = 'rgba(249,244,236,0.75)';
+      grapeBtn.style.background = 'var(--crumb)'; grapeBtn.style.borderColor = 'var(--border)';
+      grapeBtn.querySelector('div').style.color = 'var(--dark)';
+      grapeBtn.querySelectorAll('div')[1].style.color = 'var(--muted)';
+      classicDays.style.display = 'block';
+      grapeDays.style.display = 'none';
+      grapeInfo.style.display = 'none';
+    } else {
+      grapeBtn.style.background = 'var(--crust)'; grapeBtn.style.borderColor = 'var(--crust)';
+      grapeBtn.querySelector('div').style.color = 'var(--crumb)';
+      grapeBtn.querySelectorAll('div')[1].style.color = 'rgba(249,244,236,0.75)';
+      classicBtn.style.background = 'var(--crumb)'; classicBtn.style.borderColor = 'var(--border)';
+      classicBtn.querySelector('div').style.color = 'var(--dark)';
+      classicBtn.querySelectorAll('div')[1].style.color = 'var(--muted)';
+      classicDays.style.display = 'none';
+      grapeDays.style.display = 'block';
+      grapeInfo.style.display = 'block';
+    }
+  }
+
+  // ── GRAPE DAY ACCORDION ──────────────────────────────────────────────────
+  let grapeCompletedDays = new Set();
+
+  function toggleGrapeDay(day) {
+    const body = document.getElementById('gdy-' + day);
+    const card = document.getElementById('gdc-' + day);
+    const isOpen = body.classList.contains('open');
+    document.querySelectorAll('[id^="gdy-"]').forEach(b => b.classList.remove('open'));
+    document.querySelectorAll('[id^="gdc-"]').forEach(c => c.classList.remove('day-active'));
+    if (!isOpen) { body.classList.add('open'); card.classList.add('day-active'); }
+  }
+
+  function logGrapeDay(day) {
+    grapeCompletedDays.add(day);
+    const badge = document.getElementById('gdb-' + day);
+    badge.classList.add('done');
+    badge.textContent = '✓';
+
+    let msg = 'Day ' + day + ' logged';
+    if (day === 0) {
+      const grapes = document.getElementById('gd0-grapes').value || 0;
+      const f = document.getElementById('gd0-flour').value || 0;
+      const w = document.getElementById('gd0-water').value || 0;
+      msg = 'Day 0: Mixed ' + grapes + 'g grapes + ' + f + 'g flour + ' + w + 'g water';
+    } else if (day === 1) {
+      const b = document.getElementById('gd1-bubbles').value;
+      const s = document.getElementById('gd1-smell').value;
+      msg = 'Days 1–2: Bubbles: ' + b + ' · Aroma: ' + s;
+    } else if (day === 3) {
+      const l = document.getElementById('gd3-liquid').value || 0;
+      const f = document.getElementById('gd3-flour').value || 0;
+      const w = document.getElementById('gd3-water').value || 0;
+      msg = 'Days 3–4: Grapes strained. Kept ' + l + 'g liquid · Fed ' + f + 'g flour + ' + w + 'g water';
+    } else if (day === 5) {
+      const k = document.getElementById('gd5-keep').value || 0;
+      const f = document.getElementById('gd5-flour').value || 0;
+      const w = document.getElementById('gd5-water').value || 0;
+      msg = 'Days 5–7: Daily feed — kept ' + k + 'g · fed ' + f + 'g + ' + w + 'g';
+    } else if (day === 10) {
+      const fl = document.getElementById('gd10-float').value;
+      const sm = document.getElementById('gd10-smell').value;
+      msg = 'Days 10–14: Float test: ' + fl + ' · Aroma: ' + sm + ' 🍇';
+    }
+
+    const logEl = document.getElementById('glog-' + day);
+    const now = new Date();
+    const time = now.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) + ' ' + now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    logEl.innerHTML += '<div class="log-entry">' + time + ' — ' + msg + '</div>';
+  }
+
+</script>
+</body>
+</html>
